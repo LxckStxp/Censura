@@ -40,7 +40,7 @@ Cens.Messages.Splash = [[
 
 Sys.Init = function()
 
-  print(string.format( "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"..Cens.Messages.Splash.."\n", Cens.Version ))
+  print(string.format( "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"..Cens.Messages.Splash.."\n", Cens.Version ))
   
 end
 
