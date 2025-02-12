@@ -5,10 +5,6 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-<div align="center">
-  <img src="https://i.imgur.com/example.png" alt="Censura UI Library Preview" width="600"/>
-</div>
-
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
