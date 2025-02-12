@@ -113,6 +113,9 @@ Sys.Init = function()
     end
 
     Ora:Info("Initialization Complete!")
+
+    Cens.Modules.Elements.Notification.Success("Operation completed successfully!")
+    
 end
 
 -- Run our initialization function
