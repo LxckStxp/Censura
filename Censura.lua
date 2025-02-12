@@ -35,7 +35,7 @@ Cens.Messages = {
       Y8.   .88 88.  ... 88    88       88 88.  .88 88       88.  .88 
        Y88888P' `88888P' dP    dP `88888P' `88888P' dP       `88888P8  v%s
 
-By LxckStxp
+                            - By LxckStxp
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
@@ -55,7 +55,9 @@ end
 
 -- System Initialization: Load All Core Modules and UI Element Modules
 Sys.Init = function()
+    
     print(string.format(Cens.Messages.Clear .. Cens.Messages.Splash .. "\n", Cens.Version))
+    
     Ora:Info("Loading Core Modules\n")
 
     -- Define module load order in dependency order
@@ -112,7 +114,7 @@ Sys.Init = function()
 
     Ora:Info("Initialization Complete!")
 
-    Cens.Modules.Elements.Notification.Success("Operation completed successfully!")
+    Cens.Elements.Notification.Success("Operation completed successfully!")
     
 end
 
