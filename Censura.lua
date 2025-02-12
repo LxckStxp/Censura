@@ -24,7 +24,6 @@ local Cens = _G.Censura
 local Sys = Cens.System
 
 Cens.Messages.Splash = [[
-\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       a88888b.                                                       
@@ -37,12 +36,11 @@ Cens.Messages.Splash = [[
                             - By LxckStxp
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-\n
 ]]
 
 Sys.Init = function()
 
-  print(string.format( Cens.Messages.Splash, Cens.Version ))
+  print(string.format( "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"..Cens.Messages.Splash.."\n", Cens.Version ))
   
 end
 
