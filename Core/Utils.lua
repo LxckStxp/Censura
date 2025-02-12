@@ -5,13 +5,17 @@ local Utils = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- Get Styles reference
-local Styles = _G.Censura.Modules.Styles
+-- Get references to our modules (will be available after initialization)
+local function getStyles()
+    return _G.Censura.Modules.Styles
+end
 
+-- Enhanced Instance Creation with Default Styling
 function Utils.Create(className, properties)
+    local Styles = getStyles()
     local instance = Instance.new(className)
     
-    -- Apply default styles based on className
+    -- Apply default styling based on className
     if className == "TextButton" then
         instance.BackgroundColor3 = Styles.Colors.Controls.Button.Default
         instance.TextColor3 = Styles.Colors.Text.Primary
@@ -33,19 +37,41 @@ function Utils.Create(className, properties)
     end
     
     -- Apply custom properties
-    for property, value in pairs(properties) do
+    for property, value in pairs(properties or {}) do
         instance[property] = value
     end
     
     return instance
 end
 
-function Utils.MakeDraggable(dragObject, dragTarget, callbacks)
-    callbacks = callbacks or {}
+-- Enhanced Dragging System
+function Utils.MakeDraggable(dragObject, dragTarget, options)
+    options = options or {}
     local dragging = false
     local dragInput
     local dragStart
     local startPos
+    local Styles = getStyles()
+    
+    -- Add visual feedback
+    if options.highlight then
+        local originalColor = dragObject.BackgroundColor3
+        dragObject.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                Utils.Tween(dragObject, {
+                    BackgroundColor3 = Styles.Colors.Controls.Button.Pressed
+                }, Styles.Animation.Short)
+            end
+        end)
+        
+        dragObject.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                Utils.Tween(dragObject, {
+                    BackgroundColor3 = originalColor
+                }, Styles.Animation.Short)
+            end
+        end)
+    end
     
     dragObject.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -53,22 +79,22 @@ function Utils.MakeDraggable(dragObject, dragTarget, callbacks)
             dragStart = input.Position
             startPos = dragTarget.Position
             
-            if callbacks.DragStartCallback then
-                callbacks.DragStartCallback()
+            if options.dragStartCallback then
+                options.dragStartCallback()
             end
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    if callbacks.DragEndCallback then
-                        callbacks.DragEndCallback()
+                    if options.dragEndCallback then
+                        options.dragEndCallback()
                     end
                 end
             end)
         end
     end)
     
-    UserInputService.InputChanged:Connect(function(input)
+    dragObject.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
@@ -89,20 +115,34 @@ function Utils.MakeDraggable(dragObject, dragTarget, callbacks)
     end)
 end
 
+-- Enhanced Tweening System
 function Utils.Tween(instance, properties, tweenInfo)
-    tweenInfo = tweenInfo or Styles.Animation.Short
+    local Styles = getStyles()
+    
+    -- Use default animation if not specified
+    if type(tweenInfo) == "number" then
+        tweenInfo = TweenInfo.new(
+            tweenInfo,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        )
+    elseif not tweenInfo then
+        tweenInfo = Styles.Animation.Short
+    end
     
     local tween = TweenService:Create(instance, tweenInfo, properties)
     tween:Play()
     return tween
 end
 
+-- Layout Utilities
 function Utils.SetupListLayout(parent, options)
     options = options or {}
+    local Styles = getStyles()
     
     local listLayout = Utils.Create("UIListLayout", {
         Parent = parent,
-        Padding = UDim.new(0, options.Padding or Styles.Layout.Spacing.Medium),
+        Padding = options.Padding or UDim.new(0, Styles.Layout.Spacing.Medium),
         FillDirection = options.FillDirection or Enum.FillDirection.Vertical,
         HorizontalAlignment = options.HorizontalAlignment or Enum.HorizontalAlignment.Left,
         VerticalAlignment = options.VerticalAlignment or Enum.VerticalAlignment.Top,
@@ -118,38 +158,17 @@ function Utils.SetupListLayout(parent, options)
     return listLayout
 end
 
+-- UI Enhancement Utilities
 function Utils.ApplyCorners(instance, radius)
+    local Styles = getStyles()
     return Utils.Create("UICorner", {
         Parent = instance,
         CornerRadius = UDim.new(0, radius or Styles.Layout.Window.CornerRadius)
     })
 end
 
-function Utils.ApplyHoverEffect(instance, colors)
-    colors = colors or {
-        Normal = Styles.Colors.Controls.Button.Default,
-        Hover = Styles.Colors.Controls.Button.Hover,
-        Pressed = Styles.Colors.Controls.Button.Pressed
-    }
-    
-    instance.MouseEnter:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Hover})
-    end)
-    
-    instance.MouseLeave:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Normal})
-    end)
-    
-    instance.MouseButton1Down:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Pressed})
-    end)
-    
-    instance.MouseButton1Up:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Hover})
-    end)
-end
-
 function Utils.CreateShadow(parent)
+    local Styles = getStyles()
     local shadow = Utils.Create("ImageLabel", {
         Name = "Shadow",
         BackgroundTransparency = 1,
@@ -161,11 +180,11 @@ function Utils.CreateShadow(parent)
         ZIndex = parent.ZIndex - 1,
         Parent = parent
     })
-    
     return shadow
 end
 
 function Utils.CreatePadding(parent, padding)
+    local Styles = getStyles()
     return Utils.Create("UIPadding", {
         Parent = parent,
         PaddingTop = UDim.new(0, padding or Styles.Layout.Padding.Container),
@@ -173,6 +192,23 @@ function Utils.CreatePadding(parent, padding)
         PaddingLeft = UDim.new(0, padding or Styles.Layout.Padding.Container),
         PaddingRight = UDim.new(0, padding or Styles.Layout.Padding.Container)
     })
+end
+
+-- Color Utilities
+function Utils.DarkenColor(color, factor)
+    return Color3.new(
+        math.clamp(color.R * (1 - factor), 0, 1),
+        math.clamp(color.G * (1 - factor), 0, 1),
+        math.clamp(color.B * (1 - factor), 0, 1)
+    )
+end
+
+function Utils.LightenColor(color, factor)
+    return Color3.new(
+        math.clamp(color.R + (1 - color.R) * factor, 0, 1),
+        math.clamp(color.G + (1 - color.G) * factor, 0, 1),
+        math.clamp(color.B + (1 - color.B) * factor, 0, 1)
+    )
 end
 
 return Utils
