@@ -11,7 +11,7 @@ end
 
 _G.Censura = {
 
-  Version = "1.0.0"
+  Version = "1.0.0",
   
   System = {}, -- System Functions Table
   Modules = {}, -- Core Module Storage    
