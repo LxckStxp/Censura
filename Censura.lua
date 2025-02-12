@@ -31,7 +31,7 @@ Cens.Messages.Splash = [[
       88        .d8888b. 88d888b. .d8888b. dP    dP 88d888b. .d8888b. 
       88        88ooood8 88'  `88 Y8ooooo. 88    88 88'  `88 88'  `88 
       Y8.   .88 88.  ... 88    88       88 88.  .88 88       88.  .88 
-       Y88888P' `88888P' dP    dP `88888P' `88888P' dP       `88888P8 v%s
+       Y88888P' `88888P' dP    dP `88888P' `88888P' dP       `88888P8  v%s
 
                             - By LxckStxp
 
