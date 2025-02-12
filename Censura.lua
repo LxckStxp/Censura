@@ -49,8 +49,6 @@ Sys.LoadModule = function(module)
     end)
     if not success then
         Ora:Error("Failed to load module from " .. url .. ": " .. tostring(result))
-    else
-        Ora:Info("Loaded " .. module)
     end
     return result
 end
