@@ -5,18 +5,34 @@ local Utils = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
---[[ Instance Creation Utility
-    Example:
-    local button = Utils.Create("TextButton", {
-        Size = UDim2.new(0, 100, 0, 30),
-        Position = UDim2.new(0.5, -50, 0.5, -15),
-        Text = "Click Me",
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    })
-]]
+-- Get Styles reference
+local Styles = _G.Censura.Modules.Styles
+
 function Utils.Create(className, properties)
     local instance = Instance.new(className)
     
+    -- Apply default styles based on className
+    if className == "TextButton" then
+        instance.BackgroundColor3 = Styles.Colors.Controls.Button.Default
+        instance.TextColor3 = Styles.Colors.Text.Primary
+        instance.Font = Styles.Text.Default.Font
+        instance.TextSize = Styles.Text.Default.Size
+        instance.AutoButtonColor = false
+    elseif className == "TextLabel" then
+        instance.BackgroundTransparency = 1
+        instance.TextColor3 = Styles.Colors.Text.Primary
+        instance.Font = Styles.Text.Default.Font
+        instance.TextSize = Styles.Text.Default.Size
+    elseif className == "Frame" then
+        instance.BackgroundColor3 = Styles.Colors.Window.Background
+        instance.BorderSizePixel = 0
+    elseif className == "ScrollingFrame" then
+        instance.BackgroundTransparency = 1
+        instance.ScrollBarThickness = Styles.Layout.Controls.ScrollBarThickness
+        instance.ScrollBarImageColor3 = Styles.Colors.Controls.ScrollBar.Bar
+    end
+    
+    -- Apply custom properties
     for property, value in pairs(properties) do
         instance[property] = value
     end
@@ -24,18 +40,6 @@ function Utils.Create(className, properties)
     return instance
 end
 
---[[ Dragging Utility
-    Example:
-    -- Make a window draggable by its title bar
-    Utils.MakeDraggable(titleBar, windowFrame, {
-        DragStartCallback = function()
-            print("Started dragging")
-        end,
-        DragEndCallback = function()
-            print("Stopped dragging")
-        end
-    })
-]]
 function Utils.MakeDraggable(dragObject, dragTarget, callbacks)
     callbacks = callbacks or {}
     local dragging = false
@@ -80,119 +84,95 @@ function Utils.MakeDraggable(dragObject, dragTarget, callbacks)
                     startPos.Y.Scale,
                     startPos.Y.Offset + delta.Y
                 )
-            }, 0.1)
+            }, Styles.Animation.Short)
         end
     end)
 end
 
---[[ Tween Utility
-    Example:
-    -- Fade out an element
-    Utils.Tween(frame, {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 0, -50)
-    }, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-]]
-function Utils.Tween(instance, properties, duration, style, direction)
-    local tweenInfo = TweenInfo.new(
-        duration or 0.3,
-        style or Enum.EasingStyle.Quad,
-        direction or Enum.EasingDirection.Out
-    )
+function Utils.Tween(instance, properties, tweenInfo)
+    tweenInfo = tweenInfo or Styles.Animation.Short
     
     local tween = TweenService:Create(instance, tweenInfo, properties)
     tween:Play()
     return tween
 end
 
---[[ List Layout Utility
-    Example:
-    local scrollingFrame = Instance.new("ScrollingFrame")
-    Utils.SetupListLayout(scrollingFrame, {
-        Padding = UDim.new(0, 5),
-        HorizontalAlignment = Enum.HorizontalAlignment.Center
-    })
-]]
 function Utils.SetupListLayout(parent, options)
     options = options or {}
     
     local listLayout = Utils.Create("UIListLayout", {
         Parent = parent,
-        Padding = options.Padding or UDim.new(0, 5),
+        Padding = UDim.new(0, options.Padding or Styles.Layout.Spacing.Medium),
         FillDirection = options.FillDirection or Enum.FillDirection.Vertical,
         HorizontalAlignment = options.HorizontalAlignment or Enum.HorizontalAlignment.Left,
         VerticalAlignment = options.VerticalAlignment or Enum.VerticalAlignment.Top,
         SortOrder = options.SortOrder or Enum.SortOrder.LayoutOrder
     })
     
-    -- Auto-size canvas if parent is a ScrollingFrame
     if parent:IsA("ScrollingFrame") then
         listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            parent.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+            parent.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + Styles.Layout.Padding.Container)
         end)
     end
     
     return listLayout
 end
 
---[[ Corner Radius Utility
-    Example:
-    Utils.ApplyCorners(frame, 6)
-]]
 function Utils.ApplyCorners(instance, radius)
     return Utils.Create("UICorner", {
         Parent = instance,
-        CornerRadius = UDim.new(0, radius or 6)
+        CornerRadius = UDim.new(0, radius or Styles.Layout.Window.CornerRadius)
     })
 end
 
---[[ Aspect Ratio Utility
-    Example:
-    Utils.MaintainAspectRatio(imageFrame, 16, 9)
-]]
-function Utils.MaintainAspectRatio(instance, width, height)
-    return Utils.Create("UIAspectRatioConstraint", {
-        Parent = instance,
-        AspectRatio = width/height
-    })
-end
-
---[[ Color Utility
-    Example:
-    local darkerColor = Utils.DarkenColor(Color3.fromRGB(255, 100, 100), 0.2)
-    local lighterColor = Utils.LightenColor(Color3.fromRGB(100, 100, 255), 0.3)
-]]
-function Utils.DarkenColor(color, factor)
-    return Color3.new(
-        math.clamp(color.R * (1 - factor), 0, 1),
-        math.clamp(color.G * (1 - factor), 0, 1),
-        math.clamp(color.B * (1 - factor), 0, 1)
-    )
-end
-
-function Utils.LightenColor(color, factor)
-    return Color3.new(
-        math.clamp(color.R + (1 - color.R) * factor, 0, 1),
-        math.clamp(color.G + (1 - color.G) * factor, 0, 1),
-        math.clamp(color.B + (1 - color.B) * factor, 0, 1)
-    )
-end
-
---[[ Mouse Hover Effect Utility
-    Example:
-    Utils.ApplyHoverEffect(button, {
-        Normal = Color3.fromRGB(50, 50, 50),
-        Hover = Color3.fromRGB(70, 70, 70)
-    })
-]]
 function Utils.ApplyHoverEffect(instance, colors)
+    colors = colors or {
+        Normal = Styles.Colors.Controls.Button.Default,
+        Hover = Styles.Colors.Controls.Button.Hover,
+        Pressed = Styles.Colors.Controls.Button.Pressed
+    }
+    
     instance.MouseEnter:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Hover}, 0.2)
+        Utils.Tween(instance, {BackgroundColor3 = colors.Hover})
     end)
     
     instance.MouseLeave:Connect(function()
-        Utils.Tween(instance, {BackgroundColor3 = colors.Normal}, 0.2)
+        Utils.Tween(instance, {BackgroundColor3 = colors.Normal})
     end)
+    
+    instance.MouseButton1Down:Connect(function()
+        Utils.Tween(instance, {BackgroundColor3 = colors.Pressed})
+    end)
+    
+    instance.MouseButton1Up:Connect(function()
+        Utils.Tween(instance, {BackgroundColor3 = colors.Hover})
+    end)
+end
+
+function Utils.CreateShadow(parent)
+    local shadow = Utils.Create("ImageLabel", {
+        Name = "Shadow",
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://6014261993",
+        ImageColor3 = Styles.Colors.Window.Shadow,
+        ImageTransparency = 0.5,
+        Size = UDim2.new(1, Styles.Layout.Window.ShadowSize * 2, 1, Styles.Layout.Window.ShadowSize * 2),
+        Position = UDim2.new(0, -Styles.Layout.Window.ShadowSize, 0, -Styles.Layout.Window.ShadowSize),
+        ZIndex = parent.ZIndex - 1,
+        Parent = parent
+    })
+    
+    return shadow
+end
+
+function Utils.CreatePadding(parent, padding)
+    return Utils.Create("UIPadding", {
+        Parent = parent,
+        PaddingTop = UDim.new(0, padding or Styles.Layout.Padding.Container),
+        PaddingBottom = UDim.new(0, padding or Styles.Layout.Padding.Container),
+        PaddingLeft = UDim.new(0, padding or Styles.Layout.Padding.Container),
+        PaddingRight = UDim.new(0, padding or Styles.Layout.Padding.Container)
+    })
 end
 
 return Utils
