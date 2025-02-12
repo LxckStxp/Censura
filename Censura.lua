@@ -3,6 +3,7 @@
 -- Check If Censura Exists
 
 if _G.Censura then
+  print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
   print("Censura Detected. Removing existing instance.")
   _G.Censura = nil
 end
@@ -16,7 +17,11 @@ _G.Censura = {
   System = {}, -- System Functions Table
   Modules = {}, -- Core Module Storage    
 
-  Messages = {} -- Storage for Formatable Strings
+  Messages = {  -- Storage for Formatable Strings
+
+    Clear = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    
+  } 
 
 }
 
@@ -46,7 +51,7 @@ Cens.Messages.Splash = [[
 -- System Initialization.lua
 Sys.Init = function()
   
-  print(string.format( "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"..Cens.Messages.Splash.."\n", Cens.Version ))
+  print(string.format( Cens.Messages.Clear..Cens.Messages.Splash.."\n", Cens.Version ))
 
   Ora:Info("Script started successfully")
   Ora:Warn("Potential issue detected")
