@@ -151,46 +151,4 @@ local Styles = {
     }
 }
 
--- Example usage functions
-function Styles.ApplyWindowStyle(frame)
-    frame.BackgroundColor3 = Styles.Colors.Window.Background
-    frame.BorderSizePixel = Styles.Layout.Window.BorderSize
-    frame.BorderColor3 = Styles.Colors.Window.Border
-    
-    -- Apply corner radius
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, Styles.Layout.Window.CornerRadius)
-    corner.Parent = frame
-end
-
-function Styles.ApplyButtonStyle(button)
-    button.BackgroundColor3 = Styles.Colors.Controls.Button.Default
-    button.TextColor3 = Styles.Colors.Text.Primary
-    button.Font = Styles.Text.Default.Font
-    button.TextSize = Styles.Text.Default.Size
-    button.Size = UDim2.new(1, 0, 0, Styles.Layout.Controls.ButtonHeight)
-    
-    -- Apply corner radius
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = button
-    
-    -- Add hover effect
-    button.MouseEnter:Connect(function()
-        game:GetService("TweenService"):Create(
-            button,
-            Styles.Animation.Short,
-            {BackgroundColor3 = Styles.Colors.Controls.Button.Hover}
-        ):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        game:GetService("TweenService"):Create(
-            button,
-            Styles.Animation.Short,
-            {BackgroundColor3 = Styles.Colors.Controls.Button.Default}
-        ):Play()
-    end)
-end
-
 return Styles
