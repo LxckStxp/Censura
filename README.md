@@ -1,78 +1,84 @@
-# Censura UI Library
-A modern, feature-rich UI library for Roblox games with smooth animations, consistent styling, and extensive customization options.
+Censura UI Library 🎨
+A sleek, modern UI library for Roblox games featuring smooth animations, consistent styling, and extensive customization options.
 
-## Table of Contents
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Components](#components)
-  - [Window](#window)
-  - [TabSystem](#tabsystem)
-  - [Section](#section)
-  - [Button](#button)
-  - [Toggle](#toggle)
-  - [Slider](#slider)
-  - [Input](#input)
-  - [Keybind](#keybind)
-  - [ColorPicker](#colorpicker)
-  - [List](#list)
-  - [Notification](#notification)
-- [Styling](#styling)
-- [Examples](#examples)
+!Version
+!License
 
-## Installation
+<div align="center">
+  <img src="https://i.imgur.com/example.png" alt="Censura UI Library Preview" width="600"/>
+</div>
+
+📋 Table of Contents
+Installation
+Quick Start
+Features
+Components
+Window
+TabSystem
+Section
+Controls
+Styling System
+Examples
+API Reference
+
+📥 Installation
+
 Load the library into your game:
-```lua
 local Censura = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/Censura.lua"))()
 
-Quick Start
-Create a basic window with some controls:
--- Create a window
+🚀 Quick Start
+
+Create your first window with basic controls:
+-- Initialize a window
 local window = Censura.Elements.Window.new({
-    title = "My Window",
+    title = "My First Window",
     size = UDim2.new(0, 400, 0, 500)
 })
 
--- Add a tab system
+-- Create a tab system
 local tabs = Censura.Elements.TabSystem.new()
 tabs.Parent = window.content
 
--- Create tabs
+-- Add some tabs
 local mainTab = tabs:AddTab("Main")
 local settingsTab = tabs:AddTab("Settings")
 
--- Add a section to the main tab
+-- Create a section
 local section = Censura.Elements.Section.new({
-    title = "Controls"
+    title = "Quick Actions"
 })
 section.Parent = mainTab
 
--- Add some controls
+-- Add interactive elements
 Censura.Elements.Button.new({
     text = "Click Me!",
     onClick = function()
-        Censura.Elements.Notification.Success("Button clicked!")
+        Censura.Elements.Notification.Success("Hello, World!")
     end
 }).Parent = section
 
-Censura.Elements.Toggle.new({
-    text = "Enable Feature",
-    onToggle = function(enabled)
-        print("Feature:", enabled)
-    end
-}).Parent = section
+✨ Features
 
-Components
+🎨 Modern, customizable UI elements
+📱 Responsive design
+🔄 Smooth animations
+🎯 Easy-to-use API
+🛠️ Extensive component library
+📦 Modular architecture
+🎮 Gaming-focused design
+
+📦 Components
 
 Window
-Create a draggable window with title bar and content area:
+The foundation of your UI:
 local window = Censura.Elements.Window.new({
-    title = "Window Title",
+    title = "Game Settings",
     size = UDim2.new(0, 400, 0, 500),
     position = UDim2.new(0.5, -200, 0.5, -250)
 })
 
 TabSystem
-Organize content into tabs:
+Organize your content:
 local tabs = Censura.Elements.TabSystem.new()
 local mainTab = tabs:AddTab("Main")
 local settingsTab = tabs:AddTab("Settings")
@@ -83,113 +89,109 @@ tabs:SelectTab("Settings")
 Section
 Group related controls:
 local section = Censura.Elements.Section.new({
-    title = "Section Title"
+    title = "Player Settings"
 })
 
--- Add elements to section
-section:AddElement(Censura.Elements.Button.new({
-    text = "Button"
-}))
+Controls
 
 Button
-Create clickable buttons:
 Censura.Elements.Button.new({
-    text = "Click Me",
+    text = "Save Settings",
     onClick = function()
-        print("Button clicked!")
+        Censura.Elements.Notification.Success("Settings saved!")
     end
 })
 
 Toggle
-Create toggleable switches:
 Censura.Elements.Toggle.new({
-    text = "Enable Feature",
+    text = "Enable Flight",
     default = false,
     onToggle = function(enabled)
-        print("Toggle:", enabled)
+        local player = game.Players.LocalPlayer
+        player.Character.Humanoid:ChangeState(enabled and "Flying" or "Landing")
     end
 })
 
 Slider
-Create value sliders:
 Censura.Elements.Slider.new({
-    text = "Speed",
-    min = 0,
+    text = "Walk Speed",
+    min = 16,
     max = 100,
-    default = 50,
+    default = 16,
     onValueChanged = function(value)
-        print("Value:", value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
     end
 })
 
 Input
-Create text input fields:
 Censura.Elements.Input.new({
-    text = "Username",
-    placeholder = "Enter username...",
+    text = "Display Name",
+    placeholder = "Enter your name...",
     onTextChanged = function(text, enterPressed)
         if enterPressed then
-            print("Input submitted:", text)
+            game.Players.LocalPlayer.DisplayName = text
         end
     end
 })
 
 Keybind
-Create keyboard shortcuts:
 Censura.Elements.Keybind.new({
     text = "Toggle UI",
     default = Enum.KeyCode.RightControl,
     onBind = function(key)
-        print("New keybind:", key.Name)
+        print("UI will now toggle with", key.Name)
     end
 })
 
 ColorPicker
-Create color selection controls:
 Censura.Elements.ColorPicker.new({
-    text = "UI Color",
+    text = "Character Color",
     default = Color3.fromRGB(255, 0, 0),
     onColorChanged = function(color)
-        print("New color:", color)
+        local player = game.Players.LocalPlayer
+        player.Character.Humanoid.DisplayName = "Changed color!"
     end
 })
 
 List
-Create scrollable lists:
 Censura.Elements.List.new({
     title = "Players",
     items = {"Player1", "Player2", "Player3"},
-    onSelect = function(item)
-        print("Selected:", item)
+    onSelect = function(player)
+        print("Selected player:", player)
     end
 })
 
-Notification
-Show temporary notifications:
+Notification System
 -- Quick notifications
 Censura.Elements.Notification.Success("Operation completed!")
 Censura.Elements.Notification.Error("Something went wrong!")
-Censura.Elements.Notification.Warning("Be careful!")
-Censura.Elements.Notification.Info("Did you know?")
+Censura.Elements.Notification.Warning("Low health!")
+Censura.Elements.Notification.Info("New quest available!")
 
 -- Custom notification
 Censura.Elements.Notification.new({
     type = "success",
-    title = "Custom Title",
-    message = "Custom message",
+    title = "Achievement Unlocked",
+    message = "You've reached level 10!",
     duration = 3
 })
 
-Styling
-The library uses a consistent styling system defined in Styles.lua. You can access and modify styles through:
+🎨 Styling System
+
+Customize the appearance using the built-in styling system:
 local Styles = Censura.Modules.Styles
 
--- Example: Change primary color
+-- Modify theme colors
 Styles.Colors.Primary.Main = Color3.fromRGB(0, 255, 0)
+Styles.Colors.Window.Background = Color3.fromRGB(20, 20, 20)
 
-Examples
+-- Adjust spacing
+Styles.Layout.Spacing.Medium = 10
 
-Complete UI Example
+📚 Examples
+
+Complete Settings Menu
 local window = Censura.Elements.Window.new({
     title = "Game Settings"
 })
@@ -197,66 +199,100 @@ local window = Censura.Elements.Window.new({
 local tabs = Censura.Elements.TabSystem.new()
 tabs.Parent = window.content
 
--- Main Settings Tab
-local mainTab = tabs:AddTab("Settings")
-local settingsSection = Censura.Elements.Section.new({
-    title = "Game Settings"
+-- Graphics Settings
+local graphicsTab = tabs:AddTab("Graphics")
+local graphicsSection = Censura.Elements.Section.new({
+    title = "Quality Settings"
 })
-settingsSection.Parent = mainTab
+graphicsSection.Parent = graphicsTab
 
--- Add controls
 Censura.Elements.Toggle.new({
-    text = "Enable Sounds",
+    text = "Shadows",
     default = true,
     onToggle = function(enabled)
-        -- Handle sound toggle
+        game.Lighting.GlobalShadows = enabled
     end
-}).Parent = settingsSection
+}).Parent = graphicsSection
 
 Censura.Elements.Slider.new({
-    text = "Volume",
+    text = "Brightness",
     min = 0,
     max = 100,
     default = 50,
     onValueChanged = function(value)
-        -- Handle volume change
+        game.Lighting.Brightness = value/100
     end
-}).Parent = settingsSection
+}).Parent = graphicsSection
 
--- Player Tab
-local playerTab = tabs:AddTab("Player")
-local playerSection = Censura.Elements.Section.new({
-    title = "Player Settings"
+-- Audio Settings
+local audioTab = tabs:AddTab("Audio")
+local audioSection = Censura.Elements.Section.new({
+    title = "Sound Settings"
 })
-playerSection.Parent = playerTab
+audioSection.Parent = audioTab
 
--- Add player controls
-Censura.Elements.ColorPicker.new({
-    text = "Player Color",
-    default = Color3.fromRGB(255, 255, 255),
-    onColorChanged = function(color)
-        -- Handle color change
+Censura.Elements.Toggle.new({
+    text = "Music",
+    default = true,
+    onToggle = function(enabled)
+        -- Toggle background music
     end
-}).Parent = playerSection
+}).Parent = audioSection
 
-Notification System Example
--- Show a success notification when saving
-local saveButton = Censura.Elements.Button.new({
-    text = "Save Settings",
-    onClick = function()
-        -- Save logic here
-        Censura.Elements.Notification.Success("Settings saved successfully!")
-    end
-})
+📖 API Reference
 
--- Show an error notification
-local function handleError()
-    Censura.Elements.Notification.Error("Failed to save settings", "Save Error")
-end
+Window Options
+{
+    title = string,
+    size = UDim2,
+    position = UDim2,
+}
 
--- Show a warning notification
-local function handleWarning()
-    Censura.Elements.Notification.Warning("Low disk space")
-end
+Section Options
+{
+    title = string,
+    layoutOrder = number,
+}
 
-For more examples and detailed documentation, visit the Wiki.
+Button Options
+{
+    text = string,
+    onClick = function,
+    layoutOrder = number,
+}
+
+Toggle Options
+{
+    text = string,
+    default = boolean,
+    onToggle = function(enabled),
+    layoutOrder = number,
+}
+
+Slider Options
+{
+    text = string,
+    min = number,
+    max = number,
+    default = number,
+    onValueChanged = function(value),
+    layoutOrder = number,
+}
+
+📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+📧 Contact
+
+Created by @LxckStxp
+
+
+
+<div align="center">
+  Made with ❤️ by LxckStxp
+</div>
