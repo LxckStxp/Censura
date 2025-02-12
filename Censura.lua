@@ -13,6 +13,8 @@ end
 _G.Censura = {
 
   Version = "1.0.0",
+
+  Git = "https://raw.githubusercontent.com/LxckStxp/Censura/main/",
   
   System = {}, -- System Functions Table
   Modules = {}, -- Core Module Storage    
@@ -47,17 +49,32 @@ Cens.Messages.Splash = [[
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
+-- Function to Load Modules
+Sys.LoadModule = function(module)
+
+    local url = Cens.Git..module..".lua"
+  
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url, true))()
+    end)
+  
+    if not success then
+        Ora:Error("Failed to load module from " .. url .. ": " .. tostring(result))
+    else  
+        Ora:Info("Loaded "..module)
+    end
+  
+    return result
+  
+end
 
 -- System Initialization.lua
 Sys.Init = function()
   
   print(string.format( Cens.Messages.Clear..Cens.Messages.Splash.."\n", Cens.Version ))
 
-  Ora:Info("Script started successfully")
-  Ora:Warn("Potential issue detected")
-  Ora:Error("An error occurred")
-  Ora:Debug("Debug message")
-  
+  Ora:Info("Loading Core Modules\n")
+
 end
 
 Sys.Init()
