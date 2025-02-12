@@ -23,6 +23,11 @@ _G.Censura = {
 local Cens = _G.Censura
 local Sys = Cens.System
 
+Sys.Oratio = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Oratio/main/Oratio.lua", true))()
+Ora = Sys.Oratio.Logger.new({
+    moduleName = "Censura"
+})
+
 Cens.Messages.Splash = [[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -38,9 +43,15 @@ Cens.Messages.Splash = [[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
 
+-- System Initialization.lua
 Sys.Init = function()
-
+  
   print(string.format( "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"..Cens.Messages.Splash.."\n", Cens.Version ))
+
+  Ora:Info("Script started successfully")
+  Ora:Warn("Potential issue detected")
+  Ora:Error("An error occurred")
+  Ora:Debug("Debug message")
   
 end
 
