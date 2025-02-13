@@ -5,6 +5,9 @@
 ]]
 
 -- Initialize Global State with proper structure
+
+_G.Censura = nil
+
 if not _G.Censura then
     _G.Censura = {
         Modules = {
