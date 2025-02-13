@@ -9,8 +9,15 @@ local Components = {
     Active = {}
 }
 
-Styles = _G.Censura.System.Styles
+if _G.Censura.System.Styles then
 
+    local Styles = _G.Censura.System.Styles
+    print("styles loaded into components")
+
+else
+    print("styles not available")
+end
+    
 -- Services
 local Services = {
     TweenService = game:GetService("TweenService"),
