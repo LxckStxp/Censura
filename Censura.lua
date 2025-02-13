@@ -59,38 +59,55 @@ local Utility = {
         local connection = signal:Connect(callback)
         table.insert(Censura.Active.Connections, connection)
         return connection
-    end,
-    
-    MakeDraggable = function(frame, handle)
-        local dragging, dragInput, dragStart, startPos
-        
-        Utility.Connect(handle.InputBegan, function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = frame.Position
-            end
-        end)
-        
-        Utility.Connect(Services.UserInput.InputChanged, function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = input.Position - dragStart
-                frame.Position = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y
-                )
-            end
-        end)
-        
-        Utility.Connect(Services.UserInput.InputEnded, function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
     end
 }
+
+-- Add MakeDraggable separately to avoid self-reference
+function Utility.MakeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos
+    
+    -- Store connections
+    local connections = {}
+    
+    -- Input Begin
+    local beginConnection = handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    table.insert(Censura.Active.Connections, beginConnection)
+    
+    -- Input Changed
+    local changeConnection = Services.UserInput.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    table.insert(Censura.Active.Connections, changeConnection)
+    
+    -- Input End
+    local endConnection = Services.UserInput.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    table.insert(Censura.Active.Connections, endConnection)
+    
+    -- Return connections for cleanup if needed
+    return {
+        BeginConnection = beginConnection,
+        ChangeConnection = changeConnection,
+        EndConnection = endConnection
+    }
+end
 
 -- Component Creation Functions
 local Components = {
