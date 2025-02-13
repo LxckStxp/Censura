@@ -1,13 +1,12 @@
 --[[
     Censura/Core/Components.lua
     Author: LxckStxp
-    Purpose: UI Component System for Censura Framework
+    Purpose: Simplified UI Component System
     Version: 2.0.0
 ]]
 
 local Components = {
-    Active = {},
-    Cache = {}
+    Active = {}
 }
 
 -- Services
@@ -16,87 +15,7 @@ local Services = {
     UserInputService = game:GetService("UserInputService")
 }
 
--- Base Component Creation
-local function CreateBaseComponent(options)
-    return {
-        Name = options.name or options.type .. "_" .. tostring(#Components.Active + 1),
-        Type = options.type,
-        Elements = {},
-        Connections = {},
-        Options = options
-    }
-end
-
--- Style System for Consistent UI Creation
-local StyleSystem = {
-    ApplyTheming = function(instance, styles)
-        for property, value in pairs(styles) do
-            instance[property] = value
-        end
-        return instance
-    end,
-    
-    ApplyHoverEffect = function(instance, normalColor, hoverColor)
-        local connections = {}
-        
-        table.insert(connections, instance.MouseEnter:Connect(function()
-            Services.TweenService:Create(
-                instance,
-                Styles.Animations.Short,
-                {BackgroundColor3 = hoverColor}
-            ):Play()
-        end))
-        
-        table.insert(connections, instance.MouseLeave:Connect(function()
-            Services.TweenService:Create(
-                instance,
-                Styles.Animations.Short,
-                {BackgroundColor3 = normalColor}
-            ):Play()
-        end))
-        
-        return connections
-    end,
-    
-    CreateContainer = function(options)
-        local frame = Instance.new(options.instanceType or "Frame")
-        StyleSystem.ApplyTheming(frame, {
-            Name = options.name,
-            Size = options.size,
-            Position = options.position,
-            BackgroundTransparency = options.transparency or 0,
-            BackgroundColor3 = options.backgroundColor,
-            BorderSizePixel = 0,
-            Parent = options.parent
-        })
-        
-        if options.cornerRadius then
-            Styles.Utils.CreateCorner(frame, options.cornerRadius)
-        end
-        
-        return frame
-    end,
-    
-    CreateLabel = function(options)
-        local label = Instance.new("TextLabel")
-        StyleSystem.ApplyTheming(label, {
-            Name = options.name,
-            Size = options.size,
-            Position = options.position,
-            BackgroundTransparency = 1,
-            Text = options.text,
-            TextColor3 = options.textColor or Styles.GetColor("Text"),
-            Font = options.font or Styles.Fonts.Label.Font,
-            TextSize = options.textSize or Styles.Fonts.Label.Size,
-            TextXAlignment = options.alignment or Enum.TextXAlignment.Left,
-            TextWrapped = options.wrap or false,
-            Parent = options.parent
-        })
-        return label
-    end
-}
-
--- Component Registration
+-- Utility Functions
 local function RegisterComponent(component)
     Components.Active[component.Name] = component
     return component
@@ -106,479 +25,381 @@ local function UnregisterComponent(name)
     Components.Active[name] = nil
 end
 
--- Connection Management
-local function CleanupConnections(connections)
-    for _, connection in pairs(connections) do
-        if connection.Connected then
-            connection:Disconnect()
-        end
-    end
-end
-
 -- Container Component
 local function CreateContainer(options)
-    local component = CreateBaseComponent({
-        type = "Container",
-        name = options.name
-    })
+    local container = {
+        Name = options.name or "Container_" .. #Components.Active,
+        Elements = {},
+        Connections = {}
+    }
     
-    component.Instance = StyleSystem.CreateContainer({
-        instanceType = "ScrollingFrame",
-        name = component.Name,
-        size = UDim2.new(1, 0, 1, -Styles.Constants.HeaderHeight),
-        position = UDim2.new(0, 0, 0, Styles.Constants.HeaderHeight),
-        transparency = 1,
-        parent = options.parent
-    })
-    
-    StyleSystem.ApplyTheming(component.Instance, {
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = Styles.GetColor("Primary")
-    })
+    -- Create ScrollingFrame
+    container.Instance = Instance.new("ScrollingFrame")
+    container.Instance.Name = container.Name
+    container.Instance.BackgroundTransparency = 1
+    container.Instance.Size = UDim2.new(1, 0, 1, -40) -- Accounting for header
+    container.Instance.Position = UDim2.new(0, 0, 0, 40)
+    container.Instance.ScrollBarThickness = 2
+    container.Instance.ScrollBarImageColor3 = Styles.GetColor("Primary")
+    container.Instance.Parent = options.parent
     
     -- Add Layout
-    component.Layout = Instance.new("UIListLayout")
-    component.Layout.Padding = Styles.Constants.ElementSpacing
-    component.Layout.Parent = component.Instance
+    container.Layout = Instance.new("UIListLayout")
+    container.Layout.Padding = UDim.new(0, 5)
+    container.Layout.Parent = container.Instance
     
     -- Add Padding
-    Styles.Utils.CreatePadding(component.Instance)
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.Parent = container.Instance
     
-    -- Auto-size Canvas
-    component.Connections.ContentSize = component.Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        component.Instance.CanvasSize = UDim2.new(0, 0, 0, component.Layout.AbsoluteContentSize.Y + 20)
+    -- Auto-size content
+    container.Connections.ContentSize = container.Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        container.Instance.CanvasSize = UDim2.new(0, 0, 0, container.Layout.AbsoluteContentSize.Y + 20)
     end)
     
     -- Element Creation Methods
-    component.AddToggle = function(toggleOptions)
-        toggleOptions.parent = component.Instance
-        local toggle = Components.CreateToggle(toggleOptions)
-        component.Elements[toggle.Name] = toggle
+    container.AddToggle = function(opts)
+        local toggle = Components.CreateToggle({
+            parent = container.Instance,
+            name = opts.name,
+            label = opts.label,
+            default = opts.default,
+            callback = opts.callback
+        })
+        container.Elements[toggle.Name] = toggle
         return toggle
     end
     
-    component.AddButton = function(buttonOptions)
-        buttonOptions.parent = component.Instance
-        local button = Components.CreateButton(buttonOptions)
-        component.Elements[button.Name] = button
-        return button
-    end
-    
-    component.AddSlider = function(sliderOptions)
-        sliderOptions.parent = component.Instance
-        local slider = Components.CreateSlider(sliderOptions)
-        component.Elements[slider.Name] = slider
+    container.AddSlider = function(opts)
+        local slider = Components.CreateSlider({
+            parent = container.Instance,
+            name = opts.name,
+            label = opts.label,
+            min = opts.min,
+            max = opts.max,
+            default = opts.default,
+            callback = opts.callback
+        })
+        container.Elements[slider.Name] = slider
         return slider
     end
     
-    component.AddLabel = function(labelOptions)
-        labelOptions.parent = component.Instance
-        local label = Components.CreateLabel(labelOptions)
-        component.Elements[label.Name] = label
+    container.AddButton = function(opts)
+        local button = Components.CreateButton({
+            parent = container.Instance,
+            name = opts.name,
+            label = opts.label,
+            callback = opts.callback
+        })
+        container.Elements[button.Name] = button
+        return button
+    end
+    
+    container.AddLabel = function(opts)
+        local label = Components.CreateLabel({
+            parent = container.Instance,
+            text = opts.text
+        })
+        container.Elements[label.Name] = label
         return label
     end
     
     -- Cleanup
-    component.Destroy = function()
-        CleanupConnections(component.Connections)
-        for _, element in pairs(component.Elements) do
-            if element.Destroy then
-                element:Destroy()
-            end
+    container.Destroy = function()
+        for _, element in pairs(container.Elements) do
+            if element.Destroy then element:Destroy() end
         end
-        component.Instance:Destroy()
-        UnregisterComponent(component.Name)
+        for _, connection in pairs(container.Connections) do
+            connection:Disconnect()
+        end
+        container.Instance:Destroy()
+        UnregisterComponent(container.Name)
     end
     
-    return RegisterComponent(component)
-end
-
--- Button Component
-local function CreateButton(options)
-    local component = CreateBaseComponent({
-        type = "Button",
-        name = options.name
-    })
-    
-    component.Elements.Button = StyleSystem.CreateContainer({
-        instanceType = "TextButton",
-        name = component.Name,
-        size = UDim2.new(1, -20, 0, 32),
-        position = UDim2.new(0, 10, 0, 0),
-        backgroundColor = Styles.GetColor("Primary"),
-        cornerRadius = Styles.Constants.ButtonCornerRadius,
-        parent = options.parent
-    })
-    
-    StyleSystem.ApplyTheming(component.Elements.Button, {
-        Text = options.label or component.Name,
-        TextColor3 = Styles.GetColor("Text"),
-        Font = Styles.Fonts.Button.Font,
-        TextSize = Styles.Fonts.Button.Size,
-        AutoButtonColor = false
-    })
-    
-    -- Effects
-    component.Connections = StyleSystem.ApplyHoverEffect(
-        component.Elements.Button,
-        Styles.GetColor("Primary"),
-        Styles.GetColor("PrimaryHover")
-    )
-    
-    -- Click Handler
-    table.insert(component.Connections, 
-        component.Elements.Button.MouseButton1Click:Connect(function()
-            if options.callback then
-                options.callback()
-            end
-            
-            Services.TweenService:Create(
-                component.Elements.Button,
-                Styles.Animations.Quick,
-                {BackgroundColor3 = Styles.GetColor("PrimaryLight")}
-            ):Play()
-            
-            task.delay(0.1, function()
-                Services.TweenService:Create(
-                    component.Elements.Button,
-                    Styles.Animations.Short,
-                    {BackgroundColor3 = Styles.GetColor("Primary")}
-                ):Play()
-            end)
-        end)
-    )
-    
-    component.Destroy = function()
-        CleanupConnections(component.Connections)
-        component.Elements.Button:Destroy()
-        UnregisterComponent(component.Name)
-    end
-    
-    return RegisterComponent(component)
+    return RegisterComponent(container)
 end
 
 -- Toggle Component
 local function CreateToggle(options)
-    local component = CreateBaseComponent({
-        type = "Toggle",
-        name = options.name
-    })
+    local toggle = {
+        Name = options.name or "Toggle_" .. #Components.Active,
+        Value = options.default or false,
+        Elements = {}
+    }
     
-    component.Value = options.default or false
+    -- Create container
+    toggle.Elements.Container = Instance.new("Frame")
+    toggle.Elements.Container.Name = toggle.Name
+    toggle.Elements.Container.Size = UDim2.new(1, 0, 0, 30)
+    toggle.Elements.Container.BackgroundTransparency = 1
+    toggle.Elements.Container.Parent = options.parent
     
-    -- Create Container
-    component.Elements.Container = StyleSystem.CreateContainer({
-        name = component.Name,
-        size = UDim2.new(1, 0, 0, Styles.Constants.ToggleHeight),
-        transparency = 1,
-        parent = options.parent
-    })
+    -- Create label
+    toggle.Elements.Label = Instance.new("TextLabel")
+    toggle.Elements.Label.BackgroundTransparency = 1
+    toggle.Elements.Label.Size = UDim2.new(1, -50, 1, 0)
+    toggle.Elements.Label.Text = options.label or toggle.Name
+    toggle.Elements.Label.TextColor3 = Styles.GetColor("Text")
+    toggle.Elements.Label.TextXAlignment = Enum.TextXAlignment.Left
+    toggle.Elements.Label.Font = Styles.Fonts.Label.Font
+    toggle.Elements.Label.TextSize = Styles.Fonts.Label.Size
+    toggle.Elements.Label.Parent = toggle.Elements.Container
     
-    -- Create Label
-    component.Elements.Label = StyleSystem.CreateLabel({
-        name = "Label",
-        size = UDim2.new(1, -Styles.Constants.ToggleWidth - 10, 1, 0),
-        text = options.label or component.Name,
-        parent = component.Elements.Container
-    })
+    -- Create button
+    toggle.Elements.Button = Instance.new("TextButton")
+    toggle.Elements.Button.Size = UDim2.new(0, 40, 0, 20)
+    toggle.Elements.Button.Position = UDim2.new(1, -40, 0.5, -10)
+    toggle.Elements.Button.BackgroundColor3 = toggle.Value and Styles.GetColor("Success") or Styles.GetColor("Error")
+    toggle.Elements.Button.Text = ""
+    toggle.Elements.Button.Parent = toggle.Elements.Container
     
-    -- Create Toggle Button
-    component.Elements.Button = StyleSystem.CreateContainer({
-        instanceType = "TextButton",
-        name = "Button",
-        size = UDim2.new(0, Styles.Constants.ToggleWidth, 0, 24),
-        position = UDim2.new(1, -Styles.Constants.ToggleWidth, 0.5, -12),
-        backgroundColor = component.Value and Styles.GetColor("Success") or Styles.GetColor("Error"),
-        cornerRadius = Styles.Constants.ButtonCornerRadius,
-        parent = component.Elements.Container
-    })
+    -- Add corners
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = toggle.Elements.Button
     
-    -- Create Toggle Circle
-    component.Elements.Circle = StyleSystem.CreateContainer({
-        name = "Circle",
-        size = UDim2.new(0, 20, 0, 20),
-        position = component.Value and UDim2.new(1, -22, 0, 2) or UDim2.new(0, 2, 0, 2),
-        backgroundColor = Styles.GetColor("Highlight"),
-        cornerRadius = Styles.Constants.CircleCornerRadius,
-        parent = component.Elements.Button
-    })
+    -- Create circle
+    toggle.Elements.Circle = Instance.new("Frame")
+    toggle.Elements.Circle.Size = UDim2.new(0, 16, 0, 16)
+    toggle.Elements.Circle.Position = toggle.Value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    toggle.Elements.Circle.BackgroundColor3 = Styles.GetColor("Highlight")
+    toggle.Elements.Circle.Parent = toggle.Elements.Button
     
-    -- Toggle Logic
-    local animating = false
-    local function SetValue(newValue, silent)
-        if animating then return end
-        animating = true
-        component.Value = newValue
+    -- Add circle corner
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = toggle.Elements.Circle
+    
+    -- Handle clicking
+    toggle.Elements.Button.MouseButton1Click:Connect(function()
+        toggle.Value = not toggle.Value
         
         -- Animate
-        local circleTween = Services.TweenService:Create(
-            component.Elements.Circle,
+        Services.TweenService:Create(toggle.Elements.Button, 
             Styles.Animations.Short,
-            {Position = newValue and UDim2.new(1, -22, 0, 2) or UDim2.new(0, 2, 0, 2)}
-        )
+            {BackgroundColor3 = toggle.Value and Styles.GetColor("Success") or Styles.GetColor("Error")}
+        ):Play()
         
-        local colorTween = Services.TweenService:Create(
-            component.Elements.Button,
+        Services.TweenService:Create(toggle.Elements.Circle,
             Styles.Animations.Short,
-            {BackgroundColor3 = newValue and Styles.GetColor("Success") or Styles.GetColor("Error")}
-        )
+            {Position = toggle.Value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}
+        ):Play()
         
-        circleTween:Play()
-        colorTween:Play()
-        
-        if not silent and options.callback then
-            options.callback(newValue)
+        if options.callback then
+            options.callback(toggle.Value)
         end
-        
-        circleTween.Completed:Connect(function()
-            animating = false
-        end)
+    end)
+    
+    -- Methods
+    toggle.SetValue = function(value)
+        toggle.Value = value
+        toggle.Elements.Button.BackgroundColor3 = value and Styles.GetColor("Success") or Styles.GetColor("Error")
+        toggle.Elements.Circle.Position = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
     end
     
-    -- Connect Events
-    table.insert(component.Connections,
-        component.Elements.Button.MouseButton1Click:Connect(function()
-            SetValue(not component.Value)
-        end)
-    )
-    
-    -- Add hover effect
-    component.Connections = StyleSystem.ApplyHoverEffect(
-        component.Elements.Button,
-        component.Value and Styles.GetColor("Success") or Styles.GetColor("Error"),
-        component.Value and Styles.GetColor("Success") or Styles.GetColor("Error")
-    )
-    
-    -- Public Methods
-    component.SetValue = SetValue
-    component.GetValue = function()
-        return component.Value
+    toggle.Destroy = function()
+        toggle.Elements.Container:Destroy()
+        UnregisterComponent(toggle.Name)
     end
     
-    component.Destroy = function()
-        CleanupConnections(component.Connections)
-        component.Elements.Container:Destroy()
-        UnregisterComponent(component.Name)
-    end
-    
-    return RegisterComponent(component)
+    return RegisterComponent(toggle)
 end
 
 -- Slider Component
 local function CreateSlider(options)
-    local component = CreateBaseComponent({
-        type = "Slider",
-        name = options.name
-    })
+    local slider = {
+        Name = options.name or "Slider_" .. #Components.Active,
+        Value = options.default or 0,
+        Min = options.min or 0,
+        Max = options.max or 100,
+        Elements = {},
+        Dragging = false
+    }
     
-    component.Value = options.default or 0
-    component.Min = options.min or 0
-    component.Max = options.max or 100
-    component.Dragging = false
+    -- Create container
+    slider.Elements.Container = Instance.new("Frame")
+    slider.Elements.Container.Name = slider.Name
+    slider.Elements.Container.Size = UDim2.new(1, 0, 0, 45)
+    slider.Elements.Container.BackgroundTransparency = 1
+    slider.Elements.Container.Parent = options.parent
     
-    -- Create Container
-    component.Elements.Container = StyleSystem.CreateContainer({
-        name = component.Name,
-        size = UDim2.new(1, 0, 0, Styles.Constants.SliderHeight),
-        transparency = 1,
-        parent = options.parent
-    })
+    -- Create label and value
+    slider.Elements.Label = Instance.new("TextLabel")
+    slider.Elements.Label.BackgroundTransparency = 1
+    slider.Elements.Label.Size = UDim2.new(1, -50, 0, 20)
+    slider.Elements.Label.Text = options.label or slider.Name
+    slider.Elements.Label.TextColor3 = Styles.GetColor("Text")
+    slider.Elements.Label.TextXAlignment = Enum.TextXAlignment.Left
+    slider.Elements.Label.Font = Styles.Fonts.Label.Font
+    slider.Elements.Label.TextSize = Styles.Fonts.Label.Size
+    slider.Elements.Label.Parent = slider.Elements.Container
     
-    -- Create Label
-    component.Elements.Label = StyleSystem.CreateLabel({
-        name = "Label",
-        size = UDim2.new(1, -50, 0, 20),
-        text = options.label or component.Name,
-        parent = component.Elements.Container
-    })
+    slider.Elements.Value = Instance.new("TextLabel")
+    slider.Elements.Value.BackgroundTransparency = 1
+    slider.Elements.Value.Position = UDim2.new(1, -45, 0, 0)
+    slider.Elements.Value.Size = UDim2.new(0, 45, 0, 20)
+    slider.Elements.Value.Text = tostring(slider.Value)
+    slider.Elements.Value.TextColor3 = Styles.GetColor("Text")
+    slider.Elements.Value.Font = Styles.Fonts.Label.Font
+    slider.Elements.Value.TextSize = Styles.Fonts.Label.Size
+    slider.Elements.Value.Parent = slider.Elements.Container
     
-    -- Create Value Display
-    component.Elements.Value = StyleSystem.CreateLabel({
-        name = "Value",
-        size = UDim2.new(0, 45, 0, 20),
-        position = UDim2.new(1, -45, 0, 0),
-        text = tostring(component.Value),
-        font = Styles.Fonts.Value.Font,
-        textSize = Styles.Fonts.Value.Size,
-        parent = component.Elements.Container
-    })
+    -- Create slider
+    slider.Elements.SliderBG = Instance.new("Frame")
+    slider.Elements.SliderBG.Position = UDim2.new(0, 0, 0, 25)
+    slider.Elements.SliderBG.Size = UDim2.new(1, 0, 0, 4)
+    slider.Elements.SliderBG.BackgroundColor3 = Styles.GetColor("Border")
+    slider.Elements.SliderBG.Parent = slider.Elements.Container
     
-    -- Create Slider Background
-    component.Elements.Background = StyleSystem.CreateContainer({
-        name = "Background",
-        size = UDim2.new(1, 0, 0, Styles.Constants.SliderThickness),
-        position = UDim2.new(0, 0, 0, 30),
-        backgroundColor = Styles.GetColor("LightAccent"),
-        cornerRadius = UDim.new(0, 3),
-        parent = component.Elements.Container
-    })
+    slider.Elements.Fill = Instance.new("Frame")
+    slider.Elements.Fill.Size = UDim2.new((slider.Value - slider.Min)/(slider.Max - slider.Min), 0, 1, 0)
+    slider.Elements.Fill.BackgroundColor3 = Styles.GetColor("Primary")
+    slider.Elements.Fill.Parent = slider.Elements.SliderBG
     
-    -- Create Fill Bar
-    component.Elements.Fill = StyleSystem.CreateContainer({
-        name = "Fill",
-        size = UDim2.new((component.Value - component.Min) / (component.Max - component.Min), 0, 1, 0),
-        backgroundColor = Styles.GetColor("Primary"),
-        cornerRadius = UDim.new(0, 3),
-        parent = component.Elements.Background
-    })
+    -- Add corners
+    Instance.new("UICorner", slider.Elements.SliderBG).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", slider.Elements.Fill).CornerRadius = UDim.new(1, 0)
     
-    -- Create Drag Button
-    component.Elements.Button = StyleSystem.CreateContainer({
-        instanceType = "TextButton",
-        name = "Button",
-        size = UDim2.new(0, 12, 0, 12),
-        position = UDim2.new((component.Value - component.Min) / (component.Max - component.Min), -6, 0.5, -6),
-        backgroundColor = Styles.GetColor("Highlight"),
-        cornerRadius = Styles.Constants.CircleCornerRadius,
-        parent = component.Elements.Background
-    })
-    
-    -- Slider Logic
-    local function SetValue(newValue, silent)
-        component.Value = math.clamp(newValue, component.Min, component.Max)
-        local scale = (component.Value - component.Min) / (component.Max - component.Min)
+    -- Handle dragging
+    local function updateValue(input)
+        local pos = input.Position.X
+        local sliderPos = slider.Elements.SliderBG.AbsolutePosition.X
+        local sliderSize = slider.Elements.SliderBG.AbsoluteSize.X
         
-        Services.TweenService:Create(
-            component.Elements.Fill,
-            Styles.Animations.Short,
-            {Size = UDim2.new(scale, 0, 1, 0)}
-        ):Play()
+        local relative = math.clamp((pos - sliderPos) / sliderSize, 0, 1)
+        local value = slider.Min + (slider.Max - slider.Min) * relative
         
-        Services.TweenService:Create(
-            component.Elements.Button,
-            Styles.Animations.Short,
-            {Position = UDim2.new(scale, -6, 0.5, -6)}
-        ):Play()
+        slider.Value = value
+        slider.Elements.Value.Text = tostring(math.floor(value))
+        slider.Elements.Fill.Size = UDim2.new(relative, 0, 1, 0)
         
-        component.Elements.Value.Text = tostring(math.round(component.Value))
-        
-        if not silent and options.callback then
-            options.callback(component.Value)
+        if options.callback then
+            options.callback(value)
         end
     end
     
-    -- Handle Dragging
-    table.insert(component.Connections,
-        component.Elements.Button.MouseButton1Down:Connect(function()
-            component.Dragging = true
-        end)
-    )
+    slider.Elements.SliderBG.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            slider.Dragging = true
+            updateValue(input)
+        end
+    end)
     
-    table.insert(component.Connections,
-        Services.UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                component.Dragging = false
-            end
-        end)
-    )
+    Services.UserInputService.InputChanged:Connect(function(input)
+        if slider.Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateValue(input)
+        end
+    end)
     
-    table.insert(component.Connections,
-        Services.UserInputService.InputChanged:Connect(function(input)
-            if component.Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = Services.UserInputService:GetMouseLocation()
-                local sliderPos = component.Elements.Background.AbsolutePosition
-                local sliderSize = component.Elements.Background.AbsoluteSize
-                
-                local scale = math.clamp(
-                    (mousePos.X - sliderPos.X) / sliderSize.X,
-                    0,
-                    1
-                )
-                
-                local newValue = component.Min + (component.Max - component.Min) * scale
-                SetValue(newValue)
-            end
-        end)
-    )
+    Services.UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            slider.Dragging = false
+        end
+    end)
     
-    -- Hover Effects
-    local hoverConnections = StyleSystem.ApplyHoverEffect(
-        component.Elements.Button,
-        Styles.GetColor("Highlight"),
-        Styles.GetColor("Primary")
-    )
-    
-    for _, connection in ipairs(hoverConnections) do
-        table.insert(component.Connections, connection)
+    -- Methods
+    slider.SetValue = function(value)
+        value = math.clamp(value, slider.Min, slider.Max)
+        local relative = (value - slider.Min)/(slider.Max - slider.Min)
+        slider.Value = value
+        slider.Elements.Value.Text = tostring(math.floor(value))
+        slider.Elements.Fill.Size = UDim2.new(relative, 0, 1, 0)
     end
     
-    -- Public Methods
-    component.SetValue = SetValue
-    component.GetValue = function()
-        return component.Value
+    slider.Destroy = function()
+        slider.Elements.Container:Destroy()
+        UnregisterComponent(slider.Name)
     end
     
-    component.Destroy = function()
-        CleanupConnections(component.Connections)
-        component.Elements.Container:Destroy()
-        UnregisterComponent(component.Name)
+    return RegisterComponent(slider)
+end
+
+-- Button Component
+local function CreateButton(options)
+    local button = {
+        Name = options.name or "Button_" .. #Components.Active,
+        Elements = {}
+    }
+    
+    button.Elements.Button = Instance.new("TextButton")
+    button.Elements.Button.Name = button.Name
+    button.Elements.Button.Size = UDim2.new(1, 0, 0, 32)
+    button.Elements.Button.BackgroundColor3 = Styles.GetColor("Primary")
+    button.Elements.Button.Text = options.label or button.Name
+    button.Elements.Button.TextColor3 = Styles.GetColor("Text")
+    button.Elements.Button.Font = Styles.Fonts.Button.Font
+    button.Elements.Button.TextSize = Styles.Fonts.Button.Size
+    button.Elements.Button.Parent = options.parent
+    
+    Instance.new("UICorner", button.Elements.Button).CornerRadius = UDim.new(0, 6)
+    
+    -- Click effect
+    button.Elements.Button.MouseButton1Click:Connect(function()
+        Services.TweenService:Create(button.Elements.Button,
+            Styles.Animations.Short,
+            {BackgroundColor3 = Styles.GetColor("PrimaryLight")}
+        ):Play()
+        
+        if options.callback then
+            options.callback()
+        end
+        
+        task.wait(0.2)
+        Services.TweenService:Create(button.Elements.Button,
+            Styles.Animations.Short,
+            {BackgroundColor3 = Styles.GetColor("Primary")}
+        ):Play()
+    end)
+    
+    button.Destroy = function()
+        button.Elements.Button:Destroy()
+        UnregisterComponent(button.Name)
     end
     
-    return RegisterComponent(component)
+    return RegisterComponent(button)
 end
 
 -- Label Component
 local function CreateLabel(options)
-    local component = CreateBaseComponent({
-        type = "Label",
-        name = options.name
-    })
+    local label = {
+        Name = options.name or "Label_" .. #Components.Active,
+        Elements = {}
+    }
     
-    component.Elements.Label = StyleSystem.CreateLabel({
-        name = component.Name,
-        size = UDim2.new(1, -20, 0, 20),
-        position = UDim2.new(0, 10, 0, 0),
-        text = options.text or component.Name,
-        alignment = options.alignment,
-        wrap = options.wrap,
-        parent = options.parent
-    })
+    label.Elements.Label = Instance.new("TextLabel")
+    label.Elements.Label.Name = label.Name
+    label.Elements.Label.Size = UDim2.new(1, 0, 0, 25)
+    label.Elements.Label.BackgroundTransparency = 1
+    label.Elements.Label.Text = options.text or ""
+    label.Elements.Label.TextColor3 = Styles.GetColor("Text")
+    label.Elements.Label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Elements.Label.Font = Styles.Fonts.Label.Font
+    label.Elements.Label.TextSize = Styles.Fonts.Label.Size
+    label.Elements.Label.Parent = options.parent
     
-    -- Update Method
-    component.SetText = function(text)
-        component.Elements.Label.Text = text
+    -- Methods
+    label.SetText = function(text)
+        label.Elements.Label.Text = text
     end
     
-    component.Destroy = function()
-        component.Elements.Label:Destroy()
-        UnregisterComponent(component.Name)
+    label.Destroy = function()
+        label.Elements.Label:Destroy()
+        UnregisterComponent(label.Name)
     end
     
-    return RegisterComponent(component)
+    return RegisterComponent(label)
 end
 
--- Separator Component
-local function CreateSeparator(options)
-    local component = CreateBaseComponent({
-        type = "Separator",
-        name = options.name
-    })
-    
-    component.Elements.Line = StyleSystem.CreateContainer({
-        name = component.Name,
-        size = UDim2.new(1, -20, 0, 1),
-        position = UDim2.new(0, 10, 0, 0),
-        backgroundColor = Styles.GetColor("Border"),
-        parent = options.parent
-    })
-    
-    component.Destroy = function()
-        component.Elements.Line:Destroy()
-        UnregisterComponent(component.Name)
-    end
-    
-    return RegisterComponent(component)
-end
-
--- Add Components to API
+-- Add components to API
 Components.Create = {
     Container = CreateContainer,
-    Button = CreateButton,
     Toggle = CreateToggle,
     Slider = CreateSlider,
-    Label = CreateLabel,
-    Separator = CreateSeparator
+    Button = CreateButton,
+    Label = CreateLabel
 }
 
 return Components
-    
