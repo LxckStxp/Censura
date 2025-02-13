@@ -8,21 +8,14 @@
 local Components = {
     Active = {}
 }
-
-if _G.Censura.System.Styles then
-
-    local Styles = _G.Censura.System.Styles
-    print("styles loaded into components")
-
-else
-    print("styles not available")
-end
     
 -- Services
 local Services = {
     TweenService = game:GetService("TweenService"),
     UserInputService = game:GetService("UserInputService")
 }
+
+local Styles = _G.Censura.System.Styles
 
 -- Utility Functions
 local function RegisterComponent(component)
