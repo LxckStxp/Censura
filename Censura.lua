@@ -7,7 +7,9 @@
 ]]
 
 -- Core Framework
-local Censura = {
+
+
+_G.Censura = {
     Version = "2.0.0",
     Windows = {},
     Config = {
@@ -22,6 +24,8 @@ local Censura = {
         }
     }
 }
+
+local Censura = _G.Censura
 
 -- Services
 local Services = {
@@ -221,7 +225,6 @@ end
 
 -- Initialize and Return
 if Initialize() then
-    _G.Censura = Censura
     return Censura
 end
 
