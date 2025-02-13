@@ -1,12 +1,25 @@
--- Simplified Censura UI System
+--[[
+    Censura UI System
+    Author: LxckStxp
+    Version: 2.0.0
+    
+    A lightweight, modular UI system for Roblox exploits
+    with integrated logging through Oratio
+--]]
+
+-- Check for existing instance and clean up
 if _G.Censura then
     _G.Censura = nil
 end
 
+-- Main Censura table
 local Censura = {
     Version = "2.0.0",
     Windows = {},
-    Git = "https://raw.githubusercontent.com/LxckStxp/Censura/main/",
+    Git = {
+        Censura = "https://raw.githubusercontent.com/LxckStxp/Censura/main/",
+        Oratio = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/Oratio.lua"
+    },
     System = {},
     Messages = {
         Clear = string.rep("\n", 30),
@@ -45,29 +58,29 @@ local Censura = {
     }
 }
 
--- Initialize Oratio
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+-- Initialize Oratio Logger
 local function InitializeOratio()
-    local success, Oratio = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Oratio/main/Oratio.lua", true))()
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(Censura.Git.Oratio))()
     end)
     
     if not success then
-        warn("Failed to load Oratio:", Oratio)
+        warn("Failed to load Oratio:", result)
         return nil
     end
     
-    return Oratio
+    return result
 end
 
--- Setup logging
 Censura.System.Oratio = InitializeOratio()
 local Logger = Censura.System.Oratio.Logger.new({
     moduleName = "Censura"
 })
-
--- Display splash screen
-print(string.format(Censura.Messages.Clear .. Censura.Messages.Splash .. "\n", Censura.Version))
-Logger:Info("Initializing Censura UI System...")
 
 -- Utility Functions
 local function Create(className, properties)
@@ -79,30 +92,21 @@ local function Create(className, properties)
 end
 
 local function ApplyRounding(instance, radius)
-    Create("UICorner", {
+    return Create("UICorner", {
         CornerRadius = UDim.new(0, radius or 6),
         Parent = instance
     })
 end
 
-local function MakeDraggable(gui)
-    local dragging
-    local dragInput
-    local dragStart
-    local startPos
-
-    local function update(input)
-        local delta = input.Position - dragStart
-        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-
-    gui.InputBegan:Connect(function(input)
+local function MakeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+    
+    frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = gui.Position
-
+            startPos = frame.Position
+            
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -110,27 +114,36 @@ local function MakeDraggable(gui)
             end)
         end
     end)
-
-    gui.InputChanged:Connect(function(input)
+    
+    frame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
-
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    
+    UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            update(input)
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
 end
 
+-- Window Creation
 function Censura:CreateWindow(title)
+    Logger:Info("Creating window: " .. title)
+    
     local window = {
         Elements = {},
         Visible = true
     }
-
-    -- Create main window frame
+    
+    -- Main Frame
     window.Frame = Create("Frame", {
         Size = UDim2.new(0, 300, 0, 400),
         Position = UDim2.new(0.5, -150, 0.5, -200),
@@ -138,8 +151,8 @@ function Censura:CreateWindow(title)
         Parent = self.GUI
     })
     ApplyRounding(window.Frame)
-
-    -- Create title bar
+    
+    -- Title Bar
     local titleBar = Create("Frame", {
         Size = UDim2.new(1, 0, 0, 30),
         BackgroundColor3 = self.Settings.Colors.TitleBar,
@@ -147,8 +160,8 @@ function Censura:CreateWindow(title)
     })
     ApplyRounding(titleBar)
     MakeDraggable(titleBar)
-
-    -- Title text
+    
+    -- Title Text
     Create("TextLabel", {
         Size = UDim2.new(1, -10, 1, 0),
         Position = UDim2.new(0, 10, 0, 0),
@@ -160,8 +173,8 @@ function Censura:CreateWindow(title)
         TextSize = self.Settings.TextSize,
         Parent = titleBar
     })
-
-    -- Content container
+    
+    -- Content Container
     local content = Create("ScrollingFrame", {
         Size = UDim2.new(1, -10, 1, -40),
         Position = UDim2.new(0, 5, 0, 35),
@@ -169,13 +182,14 @@ function Censura:CreateWindow(title)
         ScrollBarThickness = 4,
         Parent = window.Frame
     })
-
-    -- Auto-size layout
-    local layout = Create("UIListLayout", {
+    
+    -- Auto-size Layout
+    Create("UIListLayout", {
         Padding = UDim.new(0, 5),
         Parent = content
     })
-
+    
+    -- Button Creation
     function window:AddButton(text, callback)
         local button = Create("TextButton", {
             Size = UDim2.new(1, 0, 0, 30),
@@ -187,28 +201,34 @@ function Censura:CreateWindow(title)
             Parent = content
         })
         ApplyRounding(button)
-
+        
+        -- Hover Effects
         button.MouseEnter:Connect(function()
             button.BackgroundColor3 = Censura.Settings.Colors.ButtonHover
         end)
         button.MouseLeave:Connect(function()
             button.BackgroundColor3 = Censura.Settings.Colors.Button
         end)
-
+        
         if callback then
-            button.MouseButton1Click:Connect(callback)
+            button.MouseButton1Click:Connect(function()
+                Logger:Debug("Button clicked: " .. text)
+                callback()
+            end)
         end
+        
         return button
     end
-
+    
+    -- Toggle Creation
     function window:AddToggle(text, default, callback)
         local container = Create("Frame", {
             Size = UDim2.new(1, 0, 0, 30),
             BackgroundTransparency = 1,
             Parent = content
         })
-
-        local label = Create("TextLabel", {
+        
+        Create("TextLabel", {
             Size = UDim2.new(1, -50, 1, 0),
             BackgroundTransparency = 1,
             Text = text,
@@ -218,15 +238,17 @@ function Censura:CreateWindow(title)
             TextSize = Censura.Settings.TextSize,
             Parent = container
         })
-
+        
         local toggle = Create("Frame", {
             Size = UDim2.new(0, 40, 0, 20),
             Position = UDim2.new(1, -40, 0.5, -10),
-            BackgroundColor3 = default and Censura.Settings.Colors.ToggleEnabled or Censura.Settings.Colors.Toggle,
+            BackgroundColor3 = default and 
+                Censura.Settings.Colors.ToggleEnabled or 
+                Censura.Settings.Colors.Toggle,
             Parent = container
         })
         ApplyRounding(toggle)
-
+        
         local enabled = default or false
         toggle.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -234,20 +256,26 @@ function Censura:CreateWindow(title)
                 toggle.BackgroundColor3 = enabled and 
                     Censura.Settings.Colors.ToggleEnabled or 
                     Censura.Settings.Colors.Toggle
-                if callback then callback(enabled) end
+                    
+                Logger:Debug(string.format("Toggle '%s' set to: %s", text, tostring(enabled)))
+                
+                if callback then 
+                    callback(enabled)
+                end
             end
         end)
-
+        
         return container
     end
-
+    
+    -- Slider Creation
     function window:AddSlider(text, min, max, default, callback)
         local container = Create("Frame", {
             Size = UDim2.new(1, 0, 0, 45),
             BackgroundTransparency = 1,
             Parent = content
         })
-
+        
         Create("TextLabel", {
             Size = UDim2.new(1, 0, 0, 20),
             BackgroundTransparency = 1,
@@ -258,7 +286,7 @@ function Censura:CreateWindow(title)
             TextSize = Censura.Settings.TextSize,
             Parent = container
         })
-
+        
         local sliderBar = Create("Frame", {
             Size = UDim2.new(1, 0, 0, 4),
             Position = UDim2.new(0, 0, 0.7, 0),
@@ -266,26 +294,34 @@ function Censura:CreateWindow(title)
             Parent = container
         })
         ApplyRounding(sliderBar)
-
+        
         local fill = Create("Frame", {
             Size = UDim2.new(0, 0, 1, 0),
             BackgroundColor3 = Censura.Settings.Colors.SliderFill,
             Parent = sliderBar
         })
         ApplyRounding(fill)
-
+        
         local function update(input)
-            local pos = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
+            local pos = math.clamp(
+                (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X,
+                0, 1
+            )
             local value = math.floor(min + (pos * (max - min)))
             fill.Size = UDim2.new(pos, 0, 1, 0)
-            if callback then callback(value) end
+            
+            Logger:Debug(string.format("Slider '%s' value: %d", text, value))
+            
+            if callback then 
+                callback(value)
+            end
         end
-
+        
         sliderBar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 update(input)
                 local connection
-                connection = game:GetService("RunService").RenderStepped:Connect(function()
+                connection = RunService.RenderStepped:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         connection:Disconnect()
                     else
@@ -294,39 +330,46 @@ function Censura:CreateWindow(title)
                 end)
             end
         end)
-
+        
         return container
     end
-
+    
+    -- Window Methods
     function window:Show()
         window.Frame.Visible = true
         window.Visible = true
+        Logger:Debug("Window shown: " .. title)
     end
-
+    
     function window:Hide()
         window.Frame.Visible = false
         window.Visible = false
+        Logger:Debug("Window hidden: " .. title)
     end
-
+    
     function window:Toggle()
         window.Visible = not window.Visible
         window.Frame.Visible = window.Visible
+        Logger:Debug("Window toggled: " .. title)
     end
-
+    
     table.insert(self.Windows, window)
     return window
 end
 
+-- Initialize Censura
 function Censura:Initialize()
-    Logger:Info("Setting up GUI container...")
+    Logger:Info("Initializing Censura UI System...")
     
+    -- Create GUI Container
     self.GUI = Instance.new("ScreenGui")
     self.GUI.Name = "CensuraGUI"
     self.GUI.ResetOnSpawn = false
     self.GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.GUI.DisplayOrder = 999
-
-    local success, result = pcall(function()
+    
+    -- Try to parent to CoreGui
+    local success = pcall(function()
         self.GUI.Parent = game:GetService("CoreGui")
     end)
     
@@ -334,10 +377,14 @@ function Censura:Initialize()
         Logger:Warn("Failed to parent to CoreGui, falling back to PlayerGui")
         self.GUI.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     end
-
+    
+    -- Display splash
+    print(string.format(self.Messages.Clear .. self.Messages.Splash .. "\n", self.Version))
     Logger:Info("Initialization Complete!")
+    
     return self
 end
 
+-- Set global reference and initialize
 _G.Censura = Censura
 return Censura:Initialize()
