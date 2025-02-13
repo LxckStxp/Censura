@@ -4,22 +4,38 @@
     Version: 2.0.0
 --]]
 
--- Check for existing instance
+-- Reset existing instance
 if _G.Censura then
+    pcall(function() _G.Censura.GUI:Destroy() end)
     _G.Censura = nil
 end
 
--- Initialize Censura
+-- Core Censura Framework
 local Censura = {
     Version = "2.0.0",
     Windows = {},
+    Config = {
+        DefaultTheme = "Dark",
+        ToggleKey = Enum.KeyCode.RightControl,
+        DisplayOrder = 999,
+        Debug = true
+    },
     Git = {
         Base = "https://raw.githubusercontent.com/LxckStxp/Censura/main/",
-        Components = "https://raw.githubusercontent.com/LxckStxp/Censura/main/Components.lua",
-        Styles = "https://raw.githubusercontent.com/LxckStxp/Censura/main/Styles.lua",
-        Oratio = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/Oratio.lua"
+        Core = {
+            Components = "Components.lua",
+            Styles = "Styles.lua",
+            Oratio = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/Oratio.lua"
+        }
     },
-    System = {},
+    System = {
+        Cache = {},
+        Events = {},
+        Active = {
+            Elements = {},
+            Connections = {}
+        }
+    },
     Messages = {
         Clear = string.rep("\n", 30),
         Splash = [[
@@ -40,154 +56,191 @@ local Censura = {
 }
 
 -- Services
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
+local Services = {
+    UserInput = game:GetService("UserInputService"),
+    Tween = game:GetService("TweenService"),
+    Players = game:GetService("Players"),
+    CoreGui = game:GetService("CoreGui"),
+    RunService = game:GetService("RunService")
+}
 
--- Load Dependencies
-local function LoadModule(url)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
-    end)
+-- Utility Functions
+local Utility = {
+    LoadModule = function(url)
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet(url))()
+        end)
+        return success and result or nil
+    end,
     
-    if not success then
-        warn("Failed to load module from", url, "Error:", result)
-        return nil
+    SafeDestroy = function(instance)
+        if instance and typeof(instance) == "Instance" then
+            instance:Destroy()
+        end
+    end,
+    
+    Connect = function(signal, callback)
+        local connection = signal:Connect(callback)
+        table.insert(Censura.System.Active.Connections, connection)
+        return connection
+    end,
+    
+    DisconnectAll = function()
+        for _, connection in ipairs(Censura.System.Active.Connections) do
+            if connection.Connected then
+                connection:Disconnect()
+            end
+        end
+        Censura.System.Active.Connections = {}
+    end
+}
+
+-- Core System Initialization
+local function InitializeCore()
+    -- Load Dependencies
+    Censura.System.Oratio = Utility.LoadModule(Censura.Git.Core.Oratio)
+    if not Censura.System.Oratio then
+        error("Failed to load Oratio logging system")
     end
     
-    return result
+    local Logger = Censura.System.Oratio.Logger.new({
+        moduleName = "Censura",
+        debug = Censura.Config.Debug
+    })
+    Censura.Logger = Logger
+    
+    -- Load Core Modules
+    for name, path in pairs(Censura.Git.Core) do
+        if name ~= "Oratio" then
+            local url = Censura.Git.Base .. path
+            local module = Utility.LoadModule(url)
+            
+            if module then
+                Censura.System[name] = module
+                Logger:Info(string.format("Loaded %s module", name))
+            else
+                Logger:Error(string.format("Failed to load %s module", name))
+                return false
+            end
+        end
+    end
+    
+    return true
 end
 
--- Initialize Core Systems
-Censura.System.Oratio = LoadModule(Censura.Git.Oratio)
-Censura.System.Styles = LoadModule(Censura.Git.Styles)
-Censura.System.Components = LoadModule(Censura.Git.Components)
-
-local Logger = Censura.System.Oratio.Logger.new({
-    moduleName = "Censura"
-})
-
--- Display Splash
-print(string.format(Censura.Messages.Clear .. Censura.Messages.Splash .. "\n", Censura.Version))
-Logger:Info("Initializing Censura UI System...")
-
--- Window Creation
-function Censura:CreateWindow(title)
-    Logger:Info("Creating window: " .. title)
-    
+-- Window Factory
+function Censura:CreateWindow(options)
+    options = type(options) == "table" and options or {title = options}
     local window = {
         Elements = {},
-        Visible = true
+        Visible = true,
+        Options = options
     }
     
-    -- Create main window frame using Components
+    -- Create window instance
     window.Frame = self.System.Components.Window({
-        title = title,
-        parent = self.GUI
+        title = options.title,
+        parent = self.GUI,
+        theme = options.theme or self.Config.DefaultTheme,
+        position = options.position,
+        size = options.size
     })
     
-    -- Add window methods
+    -- Window Methods
     function window:AddSection(title)
         local section, content = Censura.System.Components.Section({
             title = title,
             parent = window.Frame.Content
         })
         
-        -- Add element creation methods to section
-        function section:AddButton(text, callback)
-            return Censura.System.Components.Button({
-                text = text,
-                callback = callback,
-                parent = content
-            })
-        end
+        -- Element Creation Methods
+        local elementTypes = {
+            Button = "Button",
+            Toggle = "Toggle",
+            Slider = "Slider",
+            Label = "Label",
+            Dropdown = "Dropdown",
+            ColorPicker = "ColorPicker",
+            KeyBind = "KeyBind",
+            TextBox = "TextBox"
+        }
         
-        function section:AddToggle(text, default, callback)
-            return Censura.System.Components.Toggle({
-                text = text,
-                default = default,
-                callback = callback,
-                parent = content
-            })
-        end
-        
-        function section:AddSlider(text, min, max, default, callback)
-            return Censura.System.Components.Slider({
-                text = text,
-                min = min,
-                max = max,
-                default = default,
-                callback = callback,
-                parent = content
-            })
-        end
-        
-        function section:AddLabel(text, options)
-            options = options or {}
-            options.text = text
-            options.parent = content
-            return Censura.System.Components.Label(options)
+        for name, componentType in pairs(elementTypes) do
+            section["Add" .. name] = function(self, ...)
+                local element = Censura.System.Components[componentType](...)
+                table.insert(window.Elements, element)
+                return element
+            end
         end
         
         return section
     end
     
-    -- Window visibility methods
-    function window:Show()
-        window.Frame.Visible = true
-        window.Visible = true
-        Logger:Debug("Window shown: " .. title)
-    end
+    -- Visibility Methods
+    local visibilityMethods = {
+        Show = function(self) self.Frame.Visible = true; self.Visible = true end,
+        Hide = function(self) self.Frame.Visible = false; self.Visible = false end,
+        Toggle = function(self) self.Visible = not self.Visible; self.Frame.Visible = self.Visible end
+    }
     
-    function window:Hide()
-        window.Frame.Visible = false
-        window.Visible = false
-        Logger:Debug("Window hidden: " .. title)
-    end
-    
-    function window:Toggle()
-        window.Visible = not window.Visible
-        window.Frame.Visible = window.Visible
-        Logger:Debug("Window toggled: " .. title)
+    for name, func in pairs(visibilityMethods) do
+        window[name] = func
     end
     
     table.insert(self.Windows, window)
     return window
 end
 
--- Initialize Censura
+-- Initialize Framework
 function Censura:Initialize()
-    Logger:Info("Initializing Censura UI System...")
+    self.Logger:Info("Initializing Censura UI System...")
+    print(string.format(self.Messages.Clear .. self.Messages.Splash, self.Version))
+    
+    -- Initialize Core Systems
+    if not InitializeCore() then
+        self.Logger:Error("Failed to initialize core systems")
+        return false
+    end
     
     -- Create GUI Container
     self.GUI = Instance.new("ScreenGui")
     self.GUI.Name = "CensuraGUI"
     self.GUI.ResetOnSpawn = false
     self.GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    self.GUI.DisplayOrder = 999
+    self.GUI.DisplayOrder = self.Config.DisplayOrder
     
-    -- Try to parent to CoreGui
+    -- Parent GUI
     local success = pcall(function()
-        self.GUI.Parent = game:GetService("CoreGui")
+        self.GUI.Parent = Services.CoreGui
     end)
     
     if not success then
-        Logger:Warn("Failed to parent to CoreGui, falling back to PlayerGui")
-        self.GUI.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+        self.Logger:Warn("Failed to parent to CoreGui, using PlayerGui")
+        self.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
     end
     
-    -- Setup global toggle
-    UserInputService.InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.RightControl then
+    -- Setup Global Toggle
+    Utility.Connect(Services.UserInput.InputBegan, function(input)
+        if input.KeyCode == self.Config.ToggleKey then
             for _, window in ipairs(self.Windows) do
                 window:Toggle()
             end
         end
     end)
     
-    Logger:Info("Initialization Complete!")
+    self.Logger:Info("Initialization Complete!")
     return self
 end
 
+-- Cleanup Method
+function Censura:Destroy()
+    Utility.DisconnectAll()
+    Utility.SafeDestroy(self.GUI)
+    _G.Censura = nil
+end
+
+-- Set Global Reference
 _G.Censura = Censura
+
+-- Initialize and Return
 return Censura:Initialize()
