@@ -33,8 +33,8 @@ local Censura = {
     Git = {
         Base = "https://raw.githubusercontent.com/LxckStxp/Censura/main/",
         Core = {
-            Components = "Components.lua",
-            Styles = "Styles.lua"
+            Components = "Core/Components.lua",
+            Styles = "Core/Styles.lua"
         }
     },
     System = {
