@@ -675,4 +675,10 @@ Components.CreateButton = CreateButton
 Components.CreateLabel = CreateLabel
 Components.CreateSeparator = CreateSeparator
 
+-- Initialize the module
+if not Initialize() then
+    warn("Failed to initialize Components module")
+    return false
+end
+
 return Components
