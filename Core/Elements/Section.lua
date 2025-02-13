@@ -16,9 +16,11 @@ function Section.new(options)
     Utils.ApplyCorners(container)
     
     -- Create header if title is provided
+    local headerHeight = 0
     if options.title then
+        headerHeight = Styles.Layout.Controls.ButtonHeight
         local header = Utils.Create("TextLabel", {
-            Size = UDim2.new(1, 0, 0, Styles.Layout.Controls.ButtonHeight),
+            Size = UDim2.new(1, 0, 0, headerHeight),
             BackgroundTransparency = 1,
             Text = options.title,
             TextColor3 = Styles.Colors.Text.Primary,
@@ -33,7 +35,7 @@ function Section.new(options)
     local content = Utils.Create("Frame", {
         Size = UDim2.new(1, 0, 0, 0), -- Auto-size
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, options.title and Styles.Layout.Controls.ButtonHeight or 0),
+        Position = UDim2.new(0, 0, 0, headerHeight),
         Parent = container
     })
     
@@ -45,14 +47,17 @@ function Section.new(options)
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         content.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
         container.Size = UDim2.new(1, 0, 0, content.Size.Y.Offset + 
-            (options.title and Styles.Layout.Controls.ButtonHeight or 0) +
+            headerHeight +
             Styles.Layout.Padding.Container * 2)
     end)
     
-    -- Store content frame in container for direct parenting
-    container.ContentFrame = content
+    -- Create a table with both the container and content frame
+    local section = {
+        Container = container,
+        ContentFrame = content -- This is what was missing
+    }
     
-    return container
+    return section
 end
 
 return Section
