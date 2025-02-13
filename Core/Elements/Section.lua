@@ -15,7 +15,7 @@ function Section.new(options)
     })
     Utils.ApplyCorners(container)
     
-    -- Create header
+    -- Create header if title is provided
     if options.title then
         local header = Utils.Create("TextLabel", {
             Size = UDim2.new(1, 0, 0, Styles.Layout.Controls.ButtonHeight),
@@ -33,6 +33,7 @@ function Section.new(options)
     local content = Utils.Create("Frame", {
         Size = UDim2.new(1, 0, 0, 0), -- Auto-size
         BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, options.title and Styles.Layout.Controls.ButtonHeight or 0),
         Parent = container
     })
     
@@ -42,16 +43,14 @@ function Section.new(options)
     
     -- Update container size when content changes
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        container.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y + 
+        content.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
+        container.Size = UDim2.new(1, 0, 0, content.Size.Y.Offset + 
             (options.title and Styles.Layout.Controls.ButtonHeight or 0) +
             Styles.Layout.Padding.Container * 2)
     end)
     
-    -- Helper function to add elements
-    function container:AddElement(element)
-        element.Parent = content
-        return element
-    end
+    -- Store content frame in container for direct parenting
+    container.ContentFrame = content
     
     return container
 end
