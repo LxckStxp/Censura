@@ -4,38 +4,29 @@
     Purpose: UI Component System for Censura Framework
 ]]
 
--- Initialize Global State with proper structure
-
-_G.Censura = nil
-
-if not _G.Censura then
-    _G.Censura = {
-        Modules = {
-            Components = {},  -- Initialize Components submodule
-            Styles = {}      -- Initialize Styles submodule
-        },
-        State = {},
-        Cache = {},
-        UI = {
-            ActiveComponents = {},
-            Windows = {}
-        },
-        System = {
-            Active = {
-                Connections = {}
-            }
+-- Initialize Global State
+_G.Censura = _G.Censura or {
+    Modules = {},
+    State = {},
+    Cache = {},
+    UI = {
+        ActiveComponents = {},
+        Windows = {}
+    },
+    System = {
+        Active = {
+            Connections = {}
         }
     }
-end
+}
 
 -- Module Definition
 local Components = {
     Active = {},
-    Cache = {}
+    Cache = {},
+    Window = require(script.Parent.Window),  -- We'll need to create this
+    Section = require(script.Parent.Section)  -- And this
 }
-
--- Register in Global Space
-_G.Censura.Modules.Components = Components
 
 -- Services
 local Services = {
@@ -43,10 +34,33 @@ local Services = {
     UserInputService = game:GetService("UserInputService")
 }
 
--- Get Styles Reference
-local Styles = _G.Censura.Modules.Styles
+-- Wait for Styles module to load
+local Styles
+local function WaitForStyles()
+    local attempts = 0
+    while not Styles and attempts < 10 do
+        Styles = _G.Censura.Modules.Styles
+        if not Styles then
+            attempts = attempts + 1
+            task.wait(0.1)
+        end
+    end
+    return Styles ~= nil
+end
 
--- Utility Functions
+-- Initialize function
+local function Initialize()
+    if not WaitForStyles() then
+        warn("Failed to load Styles module")
+        return false
+    end
+
+    -- Register in Global Space
+    _G.Censura.Modules.Components = Components
+    return true
+end
+
+-- Component Registration Functions
 local function RegisterComponent(component)
     Components.Active[component.Name] = component
     return component
@@ -56,6 +70,7 @@ local function UnregisterComponent(name)
     Components.Active[name] = nil
 end
 
+-- Connection Management
 local function CreateConnection(signal, callback)
     local connection = signal:Connect(callback)
     table.insert(_G.Censura.System.Active.Connections, connection)
