@@ -4,15 +4,23 @@
     Purpose: UI Component System for Censura Framework
 ]]
 
--- Initialize Global State
+-- Initialize Global State with proper structure
 if not _G.Censura then
     _G.Censura = {
-        Modules = {},
+        Modules = {
+            Components = {},  -- Initialize Components submodule
+            Styles = {}      -- Initialize Styles submodule
+        },
         State = {},
         Cache = {},
         UI = {
             ActiveComponents = {},
             Windows = {}
+        },
+        System = {
+            Active = {
+                Connections = {}
+            }
         }
     }
 end
