@@ -6,8 +6,13 @@ local Styles = _G.Censura.Modules.Styles
 
 function TabSystem.new(options)
     options = options or {}
-    local tabs = {}
-    local currentTab = nil
+    
+    -- Internal state
+    local self = {
+        tabs = {},
+        currentTab = nil,
+        onTabChanged = options.onTabChanged
+    }
     
     -- Create main container
     local container = Utils.Create("Frame", {
@@ -16,7 +21,7 @@ function TabSystem.new(options)
         LayoutOrder = options.layoutOrder
     })
     
-    -- Create tab bar
+    -- Create tab bar with better styling
     local tabBar = Utils.Create("Frame", {
         Size = UDim2.new(1, 0, 0, Styles.Layout.Controls.ButtonHeight),
         BackgroundColor3 = Styles.Colors.Window.TitleBar,
@@ -24,7 +29,7 @@ function TabSystem.new(options)
     })
     Utils.ApplyCorners(tabBar)
     
-    -- Create tab button container
+    -- Improved tab button container
     local tabButtons = Utils.Create("Frame", {
         Size = UDim2.new(1, -10, 1, -4),
         Position = UDim2.new(0, 5, 0, 2),
@@ -32,7 +37,7 @@ function TabSystem.new(options)
         Parent = tabBar
     })
     
-    -- Setup tab button layout
+    -- Auto-sizing tab layout
     local tabLayout = Utils.Create("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Left,
@@ -41,7 +46,21 @@ function TabSystem.new(options)
         Parent = tabButtons
     })
     
-    -- Create content container
+    -- Add auto-sizing behavior
+    local function updateTabButtonSizes()
+        local tabCount = #self.tabs
+        if tabCount > 0 then
+            local availableWidth = tabButtons.AbsoluteSize.X - (tabLayout.Padding.Offset * (tabCount - 1))
+            local buttonWidth = math.floor(availableWidth / tabCount)
+            for _, tab in ipairs(self.tabs) do
+                tab.button.Size = UDim2.new(0, buttonWidth, 1, 0)
+            end
+        end
+    end
+    
+    tabButtons:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateTabButtonSizes)
+    
+    -- Improved content container with smooth transitions
     local contentContainer = Utils.Create("Frame", {
         Size = UDim2.new(1, 0, 1, -(Styles.Layout.Controls.ButtonHeight + 5)),
         Position = UDim2.new(0, 0, 0, Styles.Layout.Controls.ButtonHeight + 5),
@@ -50,21 +69,21 @@ function TabSystem.new(options)
         Parent = container
     })
     
-    -- Tab management functions
-    local function createTabButton(name)
+    -- Enhanced tab button creation
+    local function createTabButton(name, index)
         local button = Utils.Create("TextButton", {
-            Size = UDim2.new(0, 100, 1, 0),
             BackgroundColor3 = Styles.Colors.Controls.Button.Default,
             Text = name,
             TextColor3 = Styles.Colors.Text.Primary,
             Font = Styles.Text.Default.Font,
             TextSize = Styles.Text.Default.Size,
             AutoButtonColor = false,
+            LayoutOrder = index,
             Parent = tabButtons
         })
         Utils.ApplyCorners(button)
         
-        -- Create selection indicator
+        -- Improved selection indicator
         local indicator = Utils.Create("Frame", {
             Size = UDim2.new(1, 0, 0, 2),
             Position = UDim2.new(0, 0, 1, -2),
@@ -73,51 +92,88 @@ function TabSystem.new(options)
             Parent = button
         })
         
+        -- Add hover effect
+        button.MouseEnter:Connect(function()
+            if self.currentTab and self.currentTab.button ~= button then
+                Utils.Tween(button, {
+                    BackgroundColor3 = Styles.Colors.Controls.Button.Hover
+                })
+            end
+        end)
+        
+        button.MouseLeave:Connect(function()
+            if self.currentTab and self.currentTab.button ~= button then
+                Utils.Tween(button, {
+                    BackgroundColor3 = Styles.Colors.Controls.Button.Default
+                })
+            end
+        end)
+        
         return button, indicator
     end
     
+    -- Improved tab switching with animations
     local function switchTab(tab)
-        if currentTab == tab then return end
+        if self.currentTab == tab then return end
         
-        -- Update button styles
-        for _, t in pairs(tabs) do
+        -- Store previous tab for animation
+        local previousTab = self.currentTab
+        self.currentTab = tab
+        
+        -- Update all tabs
+        for _, t in ipairs(self.tabs) do
             local isSelected = t == tab
+            
+            -- Animate button
             Utils.Tween(t.button, {
                 BackgroundColor3 = isSelected 
                     and Styles.Colors.Controls.Button.Pressed
                     or Styles.Colors.Controls.Button.Default
             })
+            
+            -- Animate indicator
             Utils.Tween(t.indicator, {
                 BackgroundTransparency = isSelected and 0 or 1
             })
             
-            -- Animate content
+            -- Handle content visibility and transitions
             if t.content then
                 if isSelected then
+                    t.content.Position = UDim2.new(0.1, 0, 0, 0)
+                    t.content.BackgroundTransparency = 1
                     t.content.Visible = true
+                    
                     Utils.Tween(t.content, {
                         Position = UDim2.new(0, 0, 0, 0),
                         BackgroundTransparency = 0
                     })
                 else
-                    Utils.Tween(t.content, {
-                        Position = UDim2.new(0.1, 0, 0, 0),
-                        BackgroundTransparency = 1
-                    }).Completed:Connect(function()
+                    if t == previousTab then
+                        Utils.Tween(t.content, {
+                            Position = UDim2.new(-0.1, 0, 0, 0),
+                            BackgroundTransparency = 1
+                        }).Completed:Connect(function()
+                            t.content.Visible = false
+                        end)
+                    else
                         t.content.Visible = false
-                    end)
+                    end
                 end
             end
         end
         
-        currentTab = tab
+        -- Call onTabChanged callback if provided
+        if self.onTabChanged then
+            self.onTabChanged(tab.name)
+        end
     end
     
     -- Public methods
     function container:AddTab(name)
-        local button, indicator = createTabButton(name)
+        local index = #self.tabs + 1
+        local button, indicator = createTabButton(name, index)
         
-        -- Create content frame
+        -- Create scrolling content frame
         local content = Utils.Create("ScrollingFrame", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
@@ -128,9 +184,7 @@ function TabSystem.new(options)
         })
         
         -- Setup content layout
-        Utils.SetupListLayout(content, {
-            Padding = UDim.new(0, Styles.Layout.Spacing.Medium)
-        })
+        Utils.SetupListLayout(content)
         Utils.CreatePadding(content)
         
         -- Create tab data
@@ -138,7 +192,8 @@ function TabSystem.new(options)
             name = name,
             button = button,
             indicator = indicator,
-            content = content
+            content = content,
+            index = index
         }
         
         -- Setup button click handler
@@ -147,20 +202,19 @@ function TabSystem.new(options)
         end)
         
         -- Add to tabs table
-        table.insert(tabs, tab)
+        table.insert(self.tabs, tab)
+        updateTabButtonSizes()
         
         -- Switch to first tab automatically
-        if #tabs == 1 then
+        if #self.tabs == 1 then
             switchTab(tab)
         end
         
-        -- Return content frame for adding elements
         return content
     end
     
-    -- Optional: Add method to switch tabs programmatically
     function container:SelectTab(name)
-        for _, tab in pairs(tabs) do
+        for _, tab in ipairs(self.tabs) do
             if tab.name == name then
                 switchTab(tab)
                 break
@@ -168,9 +222,16 @@ function TabSystem.new(options)
         end
     end
     
-    -- Optional: Add method to get current tab
     function container:GetCurrentTab()
-        return currentTab and currentTab.name
+        return self.currentTab and self.currentTab.name
+    end
+    
+    function container:GetTabs()
+        local tabNames = {}
+        for _, tab in ipairs(self.tabs) do
+            table.insert(tabNames, tab.name)
+        end
+        return tabNames
     end
     
     return container
