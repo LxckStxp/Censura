@@ -1,22 +1,16 @@
 --[[
     Censura/Core/Styles.lua
-    Purpose: Central styling and theming system that integrates with _G.Censura
+    Author: LxckStxp
+    Purpose: Central styling and theming system for Censura UI Framework
 ]]
 
--- Initialize global Censura table if it doesn't exist
-if not _G.Censura then
-    _G.Censura = {
-        Modules = {},
-        State = {},
-        Cache = {}
-    }
-end
-
-local Styles = {}
-_G.Censura.Modules.Styles = Styles
-
--- Services
 local TweenService = game:GetService("TweenService")
+
+local Styles = {
+    ActiveTheme = "Default",
+    CurrentTheme = nil,
+    Cache = {}
+}
 
 -- Theme Definitions
 Styles.Themes = {
@@ -28,7 +22,10 @@ Styles.Themes = {
         Primary = Color3.fromRGB(0, 170, 255),
         Success = Color3.fromRGB(0, 255, 100),
         Error = Color3.fromRGB(255, 50, 50),
-        Highlight = Color3.fromRGB(255, 255, 255)
+        Highlight = Color3.fromRGB(255, 255, 255),
+        Border = Color3.fromRGB(50, 50, 50),
+        PrimaryLight = Color3.fromRGB(30, 190, 255),
+        PrimaryHover = Color3.fromRGB(0, 150, 235)
     },
     Dark = {
         Background = Color3.fromRGB(15, 15, 15),
@@ -38,20 +35,22 @@ Styles.Themes = {
         Primary = Color3.fromRGB(0, 140, 225),
         Success = Color3.fromRGB(0, 225, 90),
         Error = Color3.fromRGB(225, 45, 45),
-        Highlight = Color3.fromRGB(245, 245, 245)
+        Highlight = Color3.fromRGB(245, 245, 245),
+        Border = Color3.fromRGB(40, 40, 40),
+        PrimaryLight = Color3.fromRGB(20, 160, 245),
+        PrimaryHover = Color3.fromRGB(0, 130, 215)
     }
 }
 
--- Store active theme in global state
-_G.Censura.State.ActiveTheme = "Default"
-_G.Censura.State.Theme = Styles.Themes.Default
+-- Set initial theme
+Styles.CurrentTheme = Styles.Themes.Default
 
 -- Animation Presets
 Styles.Animations = {
     Short = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
     Medium = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
     Long = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-    
+    Quick = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
     Bounce = TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out),
     Elastic = TweenInfo.new(0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out),
     Smooth = TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
@@ -82,6 +81,10 @@ Styles.Fonts = {
         Size = 14
     },
     Value = {
+        Font = Enum.Font.GothamBold,
+        Size = 14
+    },
+    Button = {
         Font = Enum.Font.GothamBold,
         Size = 14
     }
@@ -134,21 +137,15 @@ Styles.Utils = {
 -- Theme Management
 function Styles.SetTheme(themeName)
     if Styles.Themes[themeName] then
-        _G.Censura.State.ActiveTheme = themeName
-        _G.Censura.State.Theme = Styles.Themes[themeName]
-        
-        -- Emit theme change event if we have an event system
-        if _G.Censura.Events and _G.Censura.Events.emit then
-            _G.Censura.Events.emit("themeChanged", themeName)
-        end
-        
+        Styles.ActiveTheme = themeName
+        Styles.CurrentTheme = Styles.Themes[themeName]
         return true
     end
     return false
 end
 
 function Styles.GetColor(colorName)
-    return _G.Censura.State.Theme[colorName]
+    return Styles.CurrentTheme[colorName]
 end
 
 -- Create Basic Tween
@@ -157,31 +154,30 @@ function Styles.CreateTween(instance, properties, duration, style)
     return TweenService:Create(instance, tweenInfo, properties)
 end
 
--- Cache frequently used values
+-- Cache Management
 function Styles.CacheValue(key, value)
-    _G.Censura.Cache[key] = value
+    Styles.Cache[key] = value
 end
 
 function Styles.GetCachedValue(key)
-    return _G.Censura.Cache[key]
+    return Styles.Cache[key]
 end
 
 -- Example usage:
 --[[
-    -- Initialize Censura with Styles
-    local Styles = require(path.to.Styles)
+    local Styles = require(script.Parent.Styles)
     
-    -- Access from anywhere
-    local theme = _G.Censura.State.Theme
-    local activeTheme = _G.Censura.State.ActiveTheme
-    
-    -- Use utility functions
+    -- Create a styled button
     local button = Instance.new("TextButton")
-    button.BackgroundColor3 = _G.Censura.Modules.Styles.GetColor("Primary")
-    _G.Censura.Modules.Styles.Utils.CreateCorner(button)
+    button.BackgroundColor3 = Styles.GetColor("Primary")
+    Styles.Utils.CreateCorner(button)
     
-    -- Change theme
-    _G.Censura.Modules.Styles.SetTheme("Dark")
+    -- Create a smooth hover effect
+    button.MouseEnter:Connect(function()
+        Styles.CreateTween(button, {
+            BackgroundColor3 = Styles.GetColor("PrimaryHover")
+        }):Play()
+    end)
 ]]
 
 return Styles
