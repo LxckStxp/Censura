@@ -50,9 +50,6 @@ local function LoadModules()
         end
         
         Censura.System[name] = module
-
-        wait(1)
-        
     end
     
     return true
