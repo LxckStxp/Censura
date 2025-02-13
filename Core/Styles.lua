@@ -1,15 +1,24 @@
 --[[
     Censura/Core/Styles.lua
-    Purpose: Central styling and theming system
-    Contains: Colors, Animation Presets, Math Utilities, Common Variables
+    Purpose: Central styling and theming system that integrates with _G.Censura
 ]]
 
+-- Initialize global Censura table if it doesn't exist
+if not _G.Censura then
+    _G.Censura = {
+        Modules = {},
+        State = {},
+        Cache = {}
+    }
+end
+
 local Styles = {}
+_G.Censura.Modules.Styles = Styles
 
 -- Services
 local TweenService = game:GetService("TweenService")
 
--- Theme Configuration
+-- Theme Definitions
 Styles.Themes = {
     Default = {
         Background = Color3.fromRGB(25, 25, 25),
@@ -33,8 +42,9 @@ Styles.Themes = {
     }
 }
 
--- Current Active Theme
-Styles.ActiveTheme = Styles.Themes.Default
+-- Store active theme in global state
+_G.Censura.State.ActiveTheme = "Default"
+_G.Censura.State.Theme = Styles.Themes.Default
 
 -- Animation Presets
 Styles.Animations = {
@@ -79,7 +89,6 @@ Styles.Fonts = {
 
 -- Utility Functions
 Styles.Utils = {
-    -- Create a shadow effect
     CreateShadow = function(parent)
         local shadow = Instance.new("ImageLabel")
         shadow.Name = "Shadow"
@@ -93,7 +102,6 @@ Styles.Utils = {
         return shadow
     end,
 
-    -- Create corner radius
     CreateCorner = function(parent, radius)
         local corner = Instance.new("UICorner")
         corner.CornerRadius = radius or Styles.Constants.CornerRadius
@@ -101,7 +109,6 @@ Styles.Utils = {
         return corner
     end,
 
-    -- Create padding
     CreatePadding = function(parent, padding)
         local uiPadding = Instance.new("UIPadding")
         uiPadding.PaddingLeft = padding or Styles.Constants.Padding
@@ -112,12 +119,10 @@ Styles.Utils = {
         return uiPadding
     end,
 
-    -- Linear interpolation
     Lerp = function(start, goal, alpha)
         return start + (goal - start) * alpha
     end,
 
-    -- Color interpolation
     LerpColor = function(c1, c2, alpha)
         local r = Styles.Utils.Lerp(c1.R, c2.R, alpha)
         local g = Styles.Utils.Lerp(c1.G, c2.G, alpha)
@@ -129,20 +134,54 @@ Styles.Utils = {
 -- Theme Management
 function Styles.SetTheme(themeName)
     if Styles.Themes[themeName] then
-        Styles.ActiveTheme = Styles.Themes[themeName]
+        _G.Censura.State.ActiveTheme = themeName
+        _G.Censura.State.Theme = Styles.Themes[themeName]
+        
+        -- Emit theme change event if we have an event system
+        if _G.Censura.Events and _G.Censura.Events.emit then
+            _G.Censura.Events.emit("themeChanged", themeName)
+        end
+        
         return true
     end
     return false
 end
 
 function Styles.GetColor(colorName)
-    return Styles.ActiveTheme[colorName]
+    return _G.Censura.State.Theme[colorName]
 end
 
 -- Create Basic Tween
 function Styles.CreateTween(instance, properties, duration, style)
-    local tweenInfo = if style then style else Styles.Animations.Short
+    local tweenInfo = style or Styles.Animations.Short
     return TweenService:Create(instance, tweenInfo, properties)
 end
+
+-- Cache frequently used values
+function Styles.CacheValue(key, value)
+    _G.Censura.Cache[key] = value
+end
+
+function Styles.GetCachedValue(key)
+    return _G.Censura.Cache[key]
+end
+
+-- Example usage:
+--[[
+    -- Initialize Censura with Styles
+    local Styles = require(path.to.Styles)
+    
+    -- Access from anywhere
+    local theme = _G.Censura.State.Theme
+    local activeTheme = _G.Censura.State.ActiveTheme
+    
+    -- Use utility functions
+    local button = Instance.new("TextButton")
+    button.BackgroundColor3 = _G.Censura.Modules.Styles.GetColor("Primary")
+    _G.Censura.Modules.Styles.Utils.CreateCorner(button)
+    
+    -- Change theme
+    _G.Censura.Modules.Styles.SetTheme("Dark")
+]]
 
 return Styles
