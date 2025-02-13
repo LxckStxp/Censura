@@ -118,18 +118,25 @@ local Utility = {
 local function LoadCoreModules()
     Logger:Info("Loading core modules...")
     
-    for name, path in pairs(Censura.Git.Core) do
-        local url = Censura.Git.Base .. path
-        local module = Utility.LoadModule(url)
-        
-        if module then
-            Censura.System[name] = module
-            Logger:Info("Loaded " .. name .. " module")
-        else
-            Logger:Error("Failed to load " .. name .. " module")
-            return false
-        end
+    -- Load Styles first
+    local stylesUrl = Censura.Git.Base .. Censura.Git.Core.Styles
+    local styles = Utility.LoadModule(stylesUrl)
+    if not styles then
+        Logger:Error("Failed to load Styles module")
+        return false
     end
+    Censura.System.Styles = styles
+    Logger:Info("Loaded Styles module")
+
+    -- Then load Components
+    local componentsUrl = Censura.Git.Base .. Censura.Git.Core.Components
+    local components = Utility.LoadModule(componentsUrl)
+    if not components then
+        Logger:Error("Failed to load Components module")
+        return false
+    end
+    Censura.System.Components = components
+    Logger:Info("Loaded Components module")
     
     return true
 end
