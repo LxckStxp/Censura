@@ -2,28 +2,6 @@
     Censura UI System
     Author: LxckStxp
     Version: 2.0.0
-    
-    Example Usage:
-    
-    local Censura = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/Censura.lua"))()
-    
-    local window = Censura:CreateWindow("Example")
-    
-    -- Create a section
-    local section = window:AddSection("Controls")
-    
-    -- Add elements
-    section:AddButton("Click Me", function()
-        print("Button clicked!")
-    end)
-    
-    section:AddToggle("Enable ESP", false, function(enabled)
-        print("ESP:", enabled)
-    end)
-    
-    section:AddSlider("Speed", 0, 100, 50, function(value)
-        print("Speed:", value)
-    end)
 --]]
 
 -- Check for existing instance
@@ -145,11 +123,10 @@ function Censura:CreateWindow(title)
         end
         
         function section:AddLabel(text, options)
-            return Censura.System.Components.Label({
-                text = text,
-                parent = content,
-                ...options
-            })
+            options = options or {}
+            options.text = text
+            options.parent = content
+            return Censura.System.Components.Label(options)
         end
         
         return section
@@ -211,39 +188,6 @@ function Censura:Initialize()
     Logger:Info("Initialization Complete!")
     return self
 end
-
--- Example Usage Demonstration
---[[
-local UI = Censura:Initialize()
-
--- Create a window
-local window = UI:CreateWindow("Example Window")
-
--- Create a section
-local section = window:AddSection("Controls")
-
--- Add various elements
-section:AddButton("Click Me", function()
-    print("Button clicked!")
-end)
-
-section:AddToggle("Enable Feature", false, function(enabled)
-    print("Feature:", enabled)
-end)
-
-section:AddSlider("Speed", 0, 100, 50, function(value)
-    print("Speed:", value)
-end)
-
-section:AddLabel("This is a label")
-
--- Create another section
-local settings = window:AddSection("Settings")
-
-settings:AddToggle("Auto Save", true, function(enabled)
-    print("Auto Save:", enabled)
-end)
---]]
 
 _G.Censura = Censura
 return Censura:Initialize()
