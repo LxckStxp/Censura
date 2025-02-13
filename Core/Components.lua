@@ -9,6 +9,8 @@ local Components = {
     Active = {}
 }
 
+Styles = _G.Censura.System.Styles
+
 -- Services
 local Services = {
     TweenService = game:GetService("TweenService"),
