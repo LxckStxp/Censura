@@ -171,90 +171,115 @@ local Components = {
         }
     end,
     
-    CreateSlider = function(options)
-        local container = Instance.new("Frame")
-        container.Size = UDim2.new(1, 0, 0, 45)
-        container.BackgroundTransparency = 1
-        container.Parent = options.parent
+CreateSlider = function(options)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 45)
+    container.BackgroundTransparency = 1
+    container.Parent = options.parent
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -50, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = options.label
+    label.TextColor3 = Censura.Config.Theme.Text
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Censura.Config.Fonts.Text
+    label.TextSize = Censura.Config.Fonts.Size.Text
+    label.Parent = container
+    
+    -- Create an interaction frame
+    local interactionFrame = Instance.new("TextButton")
+    interactionFrame.Position = UDim2.new(0, 0, 0, 25)
+    interactionFrame.Size = UDim2.new(1, 0, 0, 20) -- Made taller for easier interaction
+    interactionFrame.BackgroundTransparency = 1
+    interactionFrame.Text = ""
+    interactionFrame.Parent = container
+    
+    local sliderBG = Instance.new("Frame")
+    sliderBG.Position = UDim2.new(0, 0, 0.5, -2)
+    sliderBG.Size = UDim2.new(1, 0, 0, 4)
+    sliderBG.BackgroundColor3 = Censura.Config.Theme.Background
+    sliderBG.Parent = interactionFrame
+    Utility.CreateCorner(sliderBG, UDim.new(1, 0))
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(0, 0, 1, 0)
+    fill.BackgroundColor3 = Censura.Config.Theme.Primary
+    fill.Parent = sliderBG
+    Utility.CreateCorner(fill, UDim.new(1, 0))
+    
+    -- Add slider knob
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0, -8, 0.5, -8)
+    knob.BackgroundColor3 = Censura.Config.Theme.Primary
+    knob.Parent = fill
+    Utility.CreateCorner(knob, UDim.new(1, 0))
+    
+    -- Add value label
+    local value = Instance.new("TextLabel")
+    value.Position = UDim2.new(1, -45, 0, 0)
+    value.Size = UDim2.new(0, 45, 0, 20)
+    value.BackgroundTransparency = 1
+    value.Text = tostring(options.default or 0)
+    value.TextColor3 = Censura.Config.Theme.Text
+    value.Font = Censura.Config.Fonts.Text
+    value.TextSize = Censura.Config.Fonts.Size.Text
+    value.Parent = container
+    
+    local dragging = false
+    local function updateValue(input)
+        local pos = input.Position.X
+        local sliderPos = sliderBG.AbsolutePosition.X
+        local sliderSize = sliderBG.AbsoluteSize.X
         
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -50, 0, 20)
-        label.BackgroundTransparency = 1
-        label.Text = options.label
-        label.TextColor3 = Censura.Config.Theme.Text
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Font = Censura.Config.Fonts.Text
-        label.TextSize = Censura.Config.Fonts.Size.Text
-        label.Parent = container
+        local relative = math.clamp((pos - sliderPos) / sliderSize, 0, 1)
+        local newValue = math.floor(options.min + (options.max - options.min) * relative)
         
-        local sliderBG = Instance.new("Frame")
-        sliderBG.Position = UDim2.new(0, 0, 0, 25)
-        sliderBG.Size = UDim2.new(1, 0, 0, 4)
-        sliderBG.BackgroundColor3 = Censura.Config.Theme.Background
-        sliderBG.Parent = container
-        Utility.CreateCorner(sliderBG, UDim.new(1, 0))
+        value.Text = tostring(newValue)
+        fill.Size = UDim2.new(relative, 0, 1, 0)
         
-        local fill = Instance.new("Frame")
-        fill.Size = UDim2.new(0, 0, 1, 0)
-        fill.BackgroundColor3 = Censura.Config.Theme.Primary
-        fill.Parent = sliderBG
-        Utility.CreateCorner(fill, UDim.new(1, 0))
-        
-        local value = Instance.new("TextLabel")
-        value.Position = UDim2.new(1, -45, 0, 0)
-        value.Size = UDim2.new(0, 45, 0, 20)
-        value.BackgroundTransparency = 1
-        value.Text = tostring(options.default or 0)
-        value.TextColor3 = Censura.Config.Theme.Text
-        value.Font = Censura.Config.Fonts.Text
-        value.TextSize = Censura.Config.Fonts.Size.Text
-        value.Parent = container
-        
-        local dragging = false
-        local function updateValue(input)
-            local pos = input.Position.X
-            local sliderPos = sliderBG.AbsolutePosition.X
-            local sliderSize = sliderBG.AbsoluteSize.X
-            
-            local relative = math.clamp((pos - sliderPos) / sliderSize, 0, 1)
-            local newValue = options.min + (options.max - options.min) * relative
-            
+        if options.callback then
+            options.callback(newValue)
+        end
+    end
+    
+    -- Connect interaction frame instead of sliderBG
+    Utility.Connect(interactionFrame.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateValue(input)
+        end
+    end)
+    
+    Utility.Connect(Services.UserInput.InputChanged, function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateValue(input)
+        end
+    end)
+    
+    Utility.Connect(Services.UserInput.InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    -- Set initial value if provided
+    if options.default then
+        local relative = (options.default - options.min) / (options.max - options.min)
+        fill.Size = UDim2.new(relative, 0, 1, 0)
+        value.Text = tostring(options.default)
+    end
+    
+    return {
+        Instance = container,
+        SetValue = function(newValue)
+            local relative = (newValue - options.min) / (options.max - options.min)
             value.Text = tostring(math.floor(newValue))
             fill.Size = UDim2.new(relative, 0, 1, 0)
-            
-            if options.callback then
-                options.callback(newValue)
-            end
         end
-        
-        Utility.Connect(sliderBG.InputBegan, function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                updateValue(input)
-            end
-        end)
-        
-        Utility.Connect(Services.UserInput.InputChanged, function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                updateValue(input)
-            end
-        end)
-        
-        Utility.Connect(Services.UserInput.InputEnded, function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-        
-        return {
-            Instance = container,
-            SetValue = function(newValue)
-                local relative = (newValue - options.min) / (options.max - options.min)
-                value.Text = tostring(math.floor(newValue))
-                fill.Size = UDim2.new(relative, 0, 1, 0)
-            end
-        }
-    end,
+    }
+end,
     
     CreateButton = function(options)
         local button = Instance.new("TextButton")
