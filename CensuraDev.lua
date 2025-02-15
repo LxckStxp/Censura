@@ -327,7 +327,7 @@ function Censura:CreateWindow(options)
         ClipsDescendants = true,
         Parent = window.Frame
     })
-
+end
     -- Tab creation method
     function window:AddTab(name)
         local tab = {
