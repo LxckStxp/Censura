@@ -269,7 +269,7 @@ function Censura:CreateWindow(options)
         Parent = titleBar
     })
 
-        -- Window controls
+    -- Window controls
     local controls = self:Create("Frame", {
         Size = UDim2.new(0, 90, 1, 0),
         Position = UDim2.new(1, -90, 0, 0),
@@ -327,7 +327,7 @@ function Censura:CreateWindow(options)
         ClipsDescendants = true,
         Parent = window.Frame
     })
-end
+
     -- Tab creation method
     function window:AddTab(name)
         local tab = {
@@ -568,8 +568,17 @@ end
         
         task.spawn(closeSequence)
     end)
+    
+    -- Store window reference
+    table.insert(self.Windows, window)
+    
+    -- Fire window created signal
+    self.Signals.WindowCreated:Fire(window)
+    
+    return window
+end  -- This ends the CreateWindow function
 
-    -- Initialize Censura
+-- Initialize Censura
 function Censura:Initialize()
     -- Create main GUI container with protection handling
     self.GUI = self:Create("ScreenGui", {
