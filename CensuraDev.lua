@@ -931,11 +931,6 @@ function Censura:CreateWindow(options)
 
         -- Store tab
         window.Tabs[name] = tab
-        
-        -- Select first tab automatically
-        if not window.ActiveTab then
-            tab.Button:Click()
-        end
 
         -- Select first tab automatically (FIXED VERSION)
         if not window.ActiveTab then
