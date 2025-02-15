@@ -576,7 +576,7 @@ function Censura:CreateWindow(options)
     self.Signals.WindowCreated:Fire(window)
     
     return window
-end  -- This ends the CreateWindow function
+end -- End of CreateWindow
 
 -- Initialize Censura
 function Censura:Initialize()
@@ -590,22 +590,18 @@ function Censura:Initialize()
     -- Protected GUI handling for different exploit environments
     local success, error = pcall(function()
         if syn and syn.protect_gui then 
-            -- Synapse X protection
             syn.protect_gui(self.GUI)
             self.GUI.Parent = Services.CoreGui
         elseif protect_gui then 
-            -- Other exploit protection
             protect_gui(self.GUI)
             self.GUI.Parent = Services.CoreGui
         else 
-            -- Standard game environment
             self.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
         end
     end)
 
     if not success then
         self.Debug:Log("GUI Parenting failed: " .. tostring(error), 1)
-        -- Fallback parenting
         self.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
     end
 
@@ -650,10 +646,8 @@ end
 function Censura:ToggleUI()
     self.Active.UIVisible = not self.Active.UIVisible
     
-    -- Animate all windows
     for _, window in ipairs(self.Windows) do
         if window.Frame then
-            -- Create smooth fade animation
             Services.TweenService:Create(window.Frame,
                 self.Config.Animation.Short,
                 {
@@ -664,7 +658,6 @@ function Censura:ToggleUI()
                 }
             ):Play()
 
-            -- Fade all elements
             for _, element in ipairs(window.Frame:GetDescendants()) do
                 if element:IsA("Frame") or element:IsA("TextLabel") or 
                    element:IsA("TextButton") or element:IsA("ImageLabel") then
@@ -682,30 +675,25 @@ function Censura:ToggleUI()
         end
     end
 
-    -- Fire visibility changed signal
     self.Signals.VisibilityChanged:Fire(self.Active.UIVisible)
 end
 
 -- Cleanup System
 function Censura:Destroy()
-    -- Cleanup active connections
     for _, connection in ipairs(self.Active.Connections) do
         if typeof(connection) == "RBXScriptConnection" then
             connection:Disconnect()
         end
     end
 
-    -- Cleanup notifications
     for _, notification in ipairs(self.NotificationSystem.Active) do
         if notification.Frame then
             notification.Frame:Destroy()
         end
     end
 
-    -- Cleanup windows with animation
     for _, window in ipairs(self.Windows) do
         if window.Frame then
-            -- Fade out animation
             Services.TweenService:Create(window.Frame,
                 self.Config.Animation.Medium,
                 {
@@ -725,21 +713,17 @@ function Censura:Destroy()
         end
     end
 
-    -- Cleanup main GUI
     if self.GUI then
         self.GUI:Destroy()
     end
 
-    -- Clear all tables
     table.clear(self.Active.Elements)
     table.clear(self.Active.Connections)
     table.clear(self.Active.Debris)
     table.clear(self.Windows)
     
-    -- Clear signals
     for _, signal in pairs(self.Signals) do
         signal:Destroy()
     end
 end
-
 return Censura
