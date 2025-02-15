@@ -943,6 +943,102 @@ function Censura:CreateWindow(options)
         return tab
     end
 
+    function window:AddTab(name)
+    local tab = {
+        Name = name,
+        Content = Censura:Create("ScrollingFrame", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 2,
+            ScrollBarImageColor3 = Censura.Config.Theme.Primary,
+            Visible = false,
+            Parent = contentContainer
+        }),
+        Button = Censura:Create("TextButton", {
+            Size = UDim2.new(0, 100, 1, -10),
+            Position = UDim2.new(0, 0, 0, 5),
+            BackgroundColor3 = Censura.Config.Theme.Secondary,
+            Text = name,
+            TextColor3 = Censura.Config.Theme.TextDark,
+            Font = Censura.Config.Fonts.Text,
+            TextSize = Censura.Config.Fonts.Size.Text,
+            Parent = tabList
+        })
+    }
+
+    -- Add component methods to tab
+    function tab:AddToggle(options)
+        options.parent = self.Content
+        return Components.Toggle(options)
+    end
+
+    function tab:AddSlider(options)
+        options.parent = self.Content
+        return Components.Slider(options)
+    end
+
+    function tab:AddButton(options)
+        options.parent = self.Content
+        return Components.Button(options)
+    end
+
+    function tab:AddDropdown(options)
+        options.parent = self.Content
+        return Components.Dropdown(options)
+    end
+
+    function tab:AddInputField(options)
+        options.parent = self.Content
+        return Components.InputField(options)
+    end
+
+    -- Rest of the tab setup code...
+    local layout = Censura:Create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        Parent = tab.Content
+    })
+
+    Censura:Create("UIPadding", {
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+        Parent = tab.Content
+    })
+
+    local function selectTab()
+        if window.ActiveTab then
+            window.ActiveTab.Content.Visible = false
+            window.ActiveTab.Button.BackgroundColor3 = Censura.Config.Theme.Secondary
+            window.ActiveTab.Button.TextColor3 = Censura.Config.Theme.TextDark
+        end
+        
+        window.ActiveTab = tab
+        tab.Content.Visible = true
+        
+        Services.TweenService:Create(tab.Button,
+            Censura.Config.Animation.Short,
+            {
+                BackgroundColor3 = Censura.Config.Theme.Primary,
+                TextColor3 = Censura.Config.Theme.Text
+            }
+        ):Play()
+    end
+
+    tab.Button.MouseButton1Click:Connect(selectTab)
+
+    Censura:Create("UICorner", {
+        CornerRadius = UDim.new(0, 4),
+        Parent = tab.Button
+    })
+
+    window.Tabs[name] = tab
+    
+    if not window.ActiveTab then
+        selectTab()
+    end
+
+    return tab
+end
+
     -- Window dragging
     local dragging, dragInput, dragStart, startPos
     
