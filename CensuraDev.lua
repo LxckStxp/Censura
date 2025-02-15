@@ -1227,3 +1227,66 @@ function Censura:Destroy()
     table.clear(self.Active.Debris)
     table.clear(self.Windows)
 end
+
+-- Initialization System
+function Censura:Initialize()
+    -- Create main GUI container
+    self.GUI = self:Create("ScreenGui", {
+        Name = "CensuraUI",
+        ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    })
+
+    -- Try to parent to CoreGui (exploits) or PlayerGui
+    local success, error = pcall(function()
+        -- Synapse X support
+        if syn and syn.protect_gui then
+            syn.protect_gui(self.GUI)
+            self.GUI.Parent = Services.CoreGui
+        -- Other exploit support
+        elseif protect_gui then
+            protect_gui(self.GUI)
+            self.GUI.Parent = Services.CoreGui
+        -- Regular game support
+        else
+            self.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
+        end
+    end)
+
+    if not success then
+        warn("[Censura] GUI Parenting failed:", error)
+        self.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
+    end
+
+    -- Initialize notification system
+    self.NotificationSystem = {
+        Container = self:Create("Frame", {
+            Name = "Notifications",
+            Size = UDim2.new(0, 300, 1, 0),
+            Position = UDim2.new(1, -310, 0, 0),
+            BackgroundTransparency = 1,
+            Parent = self.GUI
+        }),
+        Queue = {},
+        Active = {}
+    }
+
+    -- Add notification layout
+    self:Create("UIListLayout", {
+        Padding = UDim.new(0, 10),
+        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+        Parent = self.NotificationSystem.Container
+    })
+
+    -- Setup global toggle keybind
+    local connection = Services.UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == self.Config.ToggleKey then
+            self:ToggleUI()
+        end
+    end)
+    table.insert(self.Active.Connections, connection)
+
+    return self
+end
+
+return Censura
