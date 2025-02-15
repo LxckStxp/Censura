@@ -866,7 +866,7 @@ function Censura:CreateWindow(options)
         Parent = window.Frame
     })
 
-    -- Window Methods
+        -- Window Methods
     function window:AddTab(name)
         local tab = {
             Name = name,
@@ -889,22 +889,22 @@ function Censura:CreateWindow(options)
                 Parent = tabList
             })
         }
-
+    
         -- Add layout to tab content
         local layout = Censura:Create("UIListLayout", {
             Padding = UDim.new(0, 8),
             Parent = tab.Content
         })
-
+    
         -- Add padding
         Censura:Create("UIPadding", {
             PaddingTop = UDim.new(0, 8),
             PaddingBottom = UDim.new(0, 8),
             Parent = tab.Content
         })
-
-        -- Tab selection logic
-        tab.Button.MouseButton1Click:Connect(function()
+    
+        -- Create a function for tab selection logic
+        local function selectTab()
             if window.ActiveTab then
                 window.ActiveTab.Content.Visible = false
                 window.ActiveTab.Button.BackgroundColor3 = Censura.Config.Theme.Secondary
@@ -921,23 +921,25 @@ function Censura:CreateWindow(options)
                     TextColor3 = Censura.Config.Theme.Text
                 }
             ):Play()
-        end)
-
+        end
+    
+        -- Connect the selection logic to the button
+        tab.Button.MouseButton1Click:Connect(selectTab)
+    
         -- Add corner to button
         Censura:Create("UICorner", {
             CornerRadius = UDim.new(0, 4),
             Parent = tab.Button
         })
-
+    
         -- Store tab
         window.Tabs[name] = tab
-
-        -- Select first tab automatically (FIXED VERSION)
-        if not window.ActiveTab then
-            -- Properly simulate a click by firing the event directly
-            tab.Button.MouseButton1Click:Fire()
-        end
         
+        -- Select first tab automatically
+        if not window.ActiveTab then
+            selectTab()
+        end
+    
         return tab
     end
 
