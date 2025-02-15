@@ -937,6 +937,12 @@ function Censura:CreateWindow(options)
             tab.Button:Click()
         end
 
+        -- Select first tab automatically (FIXED VERSION)
+        if not window.ActiveTab then
+            -- Properly simulate a click by firing the event directly
+            tab.Button.MouseButton1Click:Fire()
+        end
+        
         return tab
     end
 
