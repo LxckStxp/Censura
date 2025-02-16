@@ -4,19 +4,23 @@
     A lightweight UI framework for Roblox exploits
 ]]
 
--- Services
-local Services = {
-    TweenService = game:GetService("TweenService"),
-    UserInput = game:GetService("UserInputService"),
-    Players = game:GetService("Players"),
-    CoreGui = game:GetService("CoreGui")
-}
-
 -- Create Core Framework
-local Censura = {
-    Version = "2.0.0",
-    Windows = {},
-    Config = {
+local Censura = {}
+
+-- Initialize core components before anything else
+do
+    -- Services
+    Censura.Services = {
+        TweenService = game:GetService("TweenService"),
+        UserInput = game:GetService("UserInputService"),
+        Players = game:GetService("Players"),
+        CoreGui = game:GetService("CoreGui")
+    }
+    
+    -- Core properties
+    Censura.Version = "2.0.0"
+    Censura.Windows = {}
+    Censura.Config = {
         ToggleKey = Enum.KeyCode.RightControl,
         Theme = {
             Background = Color3.fromRGB(25, 25, 25),
@@ -38,15 +42,42 @@ local Censura = {
             Short = TweenInfo.new(0.2),
             Long = TweenInfo.new(0.5)
         }
-    },
-    Active = {
+    }
+    Censura.Active = {
         Elements = {},
         Connections = {}
     }
-}
+end
+
+-- Load Components
+do
+    -- First, load the components script
+    local componentsSource = game:HttpGet("https://raw.githubusercontent.com/your/repo/CensuraComponents.lua")
+    
+    -- Create a temporary function environment
+    local env = {
+        Censura = Censura,
+        game = game,
+        Instance = Instance,
+        UDim2 = UDim2,
+        UDim = UDim,
+        Color3 = Color3,
+        Enum = Enum,
+        table = table,
+        math = math,
+        task = task
+    }
+    
+    -- Load components into our environment
+    local componentsFunc = loadstring(componentsSource)
+    setfenv(componentsFunc, env)
+    
+    -- Execute and store components
+    Censura.Components = componentsFunc()
+end
 
 -- Utility Functions
-local Utility = {
+Censura.Utility = {
     CreateCorner = function(instance, radius)
         local corner = Instance.new("UICorner")
         corner.CornerRadius = radius or UDim.new(0, 6)
@@ -58,51 +89,47 @@ local Utility = {
         local connection = signal:Connect(callback)
         table.insert(Censura.Active.Connections, connection)
         return connection
+    end,
+    
+    MakeDraggable = function(frame, handle)
+        local dragging, dragInput, dragStart, startPos
+        
+        local beginConnection = handle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+            end
+        end)
+        table.insert(Censura.Active.Connections, beginConnection)
+        
+        local changeConnection = Censura.Services.UserInput.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+        table.insert(Censura.Active.Connections, changeConnection)
+        
+        local endConnection = Censura.Services.UserInput.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        table.insert(Censura.Active.Connections, endConnection)
+        
+        return {
+            BeginConnection = beginConnection,
+            ChangeConnection = changeConnection,
+            EndConnection = endConnection
+        }
     end
 }
-
--- Add MakeDraggable separately to avoid self-reference
-function Utility.MakeDraggable(frame, handle)
-    local dragging, dragInput, dragStart, startPos
-    
-    local beginConnection = handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-        end
-    end)
-    table.insert(Censura.Active.Connections, beginConnection)
-    
-    local changeConnection = Services.UserInput.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    table.insert(Censura.Active.Connections, changeConnection)
-    
-    local endConnection = Services.UserInput.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    table.insert(Censura.Active.Connections, endConnection)
-    
-    return {
-        BeginConnection = beginConnection,
-        ChangeConnection = changeConnection,
-        EndConnection = endConnection
-    }
-end
-
--- Load Components
-local Components = require(script.Parent.CensuraComponents):Init(Censura, Utility)
 
 -- Window Creation
 function Censura:CreateWindow(options)
@@ -119,7 +146,7 @@ function Censura:CreateWindow(options)
     window.Frame.BackgroundColor3 = self.Config.Theme.Background
     window.Frame.BorderSizePixel = 0
     window.Frame.Parent = self.GUI
-    Utility.CreateCorner(window.Frame)
+    self.Utility.CreateCorner(window.Frame)
     
     -- Create header
     local header = Instance.new("Frame")
@@ -127,7 +154,7 @@ function Censura:CreateWindow(options)
     header.BackgroundColor3 = self.Config.Theme.Primary
     header.BorderSizePixel = 0
     header.Parent = window.Frame
-    Utility.CreateCorner(header)
+    self.Utility.CreateCorner(header)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, -10, 1, 0)
@@ -153,26 +180,26 @@ function Censura:CreateWindow(options)
     layout.Parent = content
     
     -- Make window draggable
-    Utility.MakeDraggable(window.Frame, header)
+    self.Utility.MakeDraggable(window.Frame, header)
     
     -- Window methods
     function window:AddToggle(options)
         options.parent = content
-        local toggle = Components.CreateToggle(options)
+        local toggle = Censura.Components.CreateToggle(options)
         table.insert(self.Elements, toggle)
         return toggle
     end
     
     function window:AddSlider(options)
         options.parent = content
-        local slider = Components.CreateSlider(options)
+        local slider = Censura.Components.CreateSlider(options)
         table.insert(self.Elements, slider)
         return slider
     end
     
     function window:AddButton(options)
         options.parent = content
-        local button = Components.CreateButton(options)
+        local button = Censura.Components.CreateButton(options)
         table.insert(self.Elements, button)
         return button
     end
@@ -195,15 +222,15 @@ local function Initialize()
     
     -- Parent GUI
     pcall(function()
-        Censura.GUI.Parent = Services.CoreGui
+        Censura.GUI.Parent = Censura.Services.CoreGui
     end)
     
     if not Censura.GUI.Parent then
-        Censura.GUI.Parent = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
+        Censura.GUI.Parent = Censura.Services.Players.LocalPlayer:WaitForChild("PlayerGui")
     end
     
     -- Setup toggle
-    Utility.Connect(Services.UserInput.InputBegan, function(input)
+    Censura.Utility.Connect(Censura.Services.UserInput.InputBegan, function(input)
         if input.KeyCode == Censura.Config.ToggleKey then
             for _, window in ipairs(Censura.Windows) do
                 window:Toggle()
