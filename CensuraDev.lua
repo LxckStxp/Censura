@@ -2,6 +2,10 @@
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
 -- Constants for styling
 local COLORS = {
     BACKGROUND = Color3.fromRGB(25, 25, 25),
@@ -20,6 +24,45 @@ local UI_SETTINGS = {
     SLIDER_SIZE = UDim2.new(1, -10, 0, 40),
 }
 
+-- Add dragging functionality
+local function makeDraggable(frame)
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
@@ -27,6 +70,26 @@ function CensuraDev.new()
     self.ScreenGui = Instance.new("ScreenGui")
     self.ScreenGui.Name = "CensuraUI"
     self.ScreenGui.ResetOnSpawn = false
+    
+    -- Create title bar
+    self.TitleBar = Instance.new("Frame")
+    self.TitleBar.Name = "TitleBar"
+    self.TitleBar.Size = UDim2.new(1, 0, 0, 30)
+    self.TitleBar.BackgroundColor3 = COLORS.ACCENT
+    self.TitleBar.Parent = self.MainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
+    titleCorner.Parent = self.TitleBar
+    
+    local title = Instance.new("TextLabel")
+    title.Text = "Censura"
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.TextColor3 = COLORS.TEXT
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 14
+    title.Parent = self.TitleBar
     
     -- Create main frame
     self.MainFrame = Instance.new("Frame")
@@ -44,8 +107,8 @@ function CensuraDev.new()
     -- Add content frame
     self.ContentFrame = Instance.new("ScrollingFrame")
     self.ContentFrame.Name = "ContentFrame"
-    self.ContentFrame.Size = UDim2.new(1, -10, 1, -10)
-    self.ContentFrame.Position = UDim2.new(0, 5, 0, 5)
+    self.ContentFrame.Size = UDim2.new(1, -10, 1, -45) -- Adjusted for title bar
+    self.ContentFrame.Position = UDim2.new(0, 5, 0, 35) -- Positioned below title bar
     self.ContentFrame.BackgroundTransparency = 1
     self.ContentFrame.ScrollBarThickness = 4
     self.ContentFrame.Parent = self.MainFrame
@@ -55,25 +118,19 @@ function CensuraDev.new()
     listLayout.Padding = UI_SETTINGS.PADDING
     listLayout.Parent = self.ContentFrame
     
+    -- Make the frame draggable using the title bar
+    makeDraggable(self.TitleBar)
+    
+    -- Set up visibility toggle with Right Control
+    self.Visible = true
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if not processed and input.KeyCode == Enum.KeyCode.RightControl then
+            self.Visible = not self.Visible
+            self.MainFrame.Visible = self.Visible
+        end
+    end)
+    
     return self
-end
-
-function CensuraDev:CreateButton(text, callback)
-    local button = Instance.new("TextButton")
-    button.Size = UI_SETTINGS.BUTTON_SIZE
-    button.BackgroundColor3 = COLORS.ACCENT
-    button.Text = text
-    button.TextColor3 = COLORS.TEXT
-    button.Font = Enum.Font.Gotham
-    button.TextSize = 14
-    button.Parent = self.ContentFrame
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
-    corner.Parent = button
-    
-    button.MouseButton1Click:Connect(callback)
-    return button
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
@@ -188,11 +245,14 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
 end
 
 function CensuraDev:Show()
-    self.ScreenGui.Parent = game:GetService("CoreGui")
+    self.ScreenGui.Parent = CoreGui
+    self.Visible = true
+    self.MainFrame.Visible = true
 end
 
 function CensuraDev:Hide()
-    self.ScreenGui.Parent = nil
+    self.Visible = false
+    self.MainFrame.Visible = false
 end
 
 return CensuraDev
