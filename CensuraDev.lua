@@ -133,6 +133,24 @@ function CensuraDev.new()
     return self
 end
 
+function CensuraDev:CreateButton(text, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UI_SETTINGS.BUTTON_SIZE
+    button.BackgroundColor3 = COLORS.ACCENT
+    button.Text = text
+    button.TextColor3 = COLORS.TEXT
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 14
+    button.Parent = self.ContentFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
+    corner.Parent = button
+    
+    button.MouseButton1Click:Connect(callback)
+    return button
+end
+
 function CensuraDev:CreateToggle(text, default, callback)
     local container = Instance.new("Frame")
     container.Size = UI_SETTINGS.BUTTON_SIZE
