@@ -71,7 +71,20 @@ function CensuraDev.new()
     self.ScreenGui.Name = "CensuraUI"
     self.ScreenGui.ResetOnSpawn = false
     
-    -- Create title bar
+    -- Create main frame FIRST
+    self.MainFrame = Instance.new("Frame")
+    self.MainFrame.Name = "MainFrame"
+    self.MainFrame.Size = UDim2.new(0, 300, 0, 400)
+    self.MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    self.MainFrame.BackgroundColor3 = COLORS.BACKGROUND
+    self.MainFrame.Parent = self.ScreenGui
+    
+    -- Add corner radius to main frame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
+    corner.Parent = self.MainFrame
+    
+    -- THEN create title bar
     self.TitleBar = Instance.new("Frame")
     self.TitleBar.Name = "TitleBar"
     self.TitleBar.Size = UDim2.new(1, 0, 0, 30)
@@ -90,19 +103,6 @@ function CensuraDev.new()
     title.Font = Enum.Font.GothamBold
     title.TextSize = 14
     title.Parent = self.TitleBar
-    
-    -- Create main frame
-    self.MainFrame = Instance.new("Frame")
-    self.MainFrame.Name = "MainFrame"
-    self.MainFrame.Size = UDim2.new(0, 300, 0, 400)
-    self.MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-    self.MainFrame.BackgroundColor3 = COLORS.BACKGROUND
-    self.MainFrame.Parent = self.ScreenGui
-    
-    -- Add corner radius
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
-    corner.Parent = self.MainFrame
     
     -- Add content frame
     self.ContentFrame = Instance.new("ScrollingFrame")
