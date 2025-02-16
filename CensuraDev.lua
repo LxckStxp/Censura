@@ -52,10 +52,10 @@ end
 -- Load Components
 do
     -- First, load the components script
-    local componentsSource = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
+    local componentsSource = game:HttpGet("https://raw.githubusercontent.com/your/repo/CensuraComponents.lua")
     
     -- Create a temporary function environment
-    local env = {
+    local env = setmetatable({
         Censura = Censura,
         game = game,
         Instance = Instance,
@@ -66,13 +66,16 @@ do
         table = table,
         math = math,
         task = task
-    }
+    }, {__index = getfenv(0)})
     
     -- Load components into our environment
-    local componentsFunc = loadstring(componentsSource)
-    setfenv(componentsFunc, env)
+    local componentsFunc, err = loadstring(componentsSource)
+    if not componentsFunc then
+        error("Failed to load components: " .. tostring(err))
+    end
     
-    -- Execute and store components
+    -- Set the environment and execute
+    setfenv(1, env)
     Censura.Components = componentsFunc()
 end
 
