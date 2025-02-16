@@ -52,7 +52,7 @@ end
 -- Load Components
 do
     -- First, load the components script
-    local componentsSource = game:HttpGet("https://raw.githubusercontent.com/your/repo/CensuraComponents.lua")
+    local componentsSource = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
     
     -- Create a temporary function environment
     local env = {
