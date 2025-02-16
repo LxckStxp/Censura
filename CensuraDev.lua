@@ -168,7 +168,7 @@ function CensuraDev.new()
     -- Visibility Toggle
     self.Visible = true
     UserInputService.InputBegan:Connect(function(input, processed)
-        if not processed and input.KeyCode == Enum.KeyCode.RightControl then
+        if not processed and input.KeyCode == Enum.KeyCode.RightAlt then
             self.Visible = not self.Visible
             self.MainFrame.Visible = self.Visible
         end
