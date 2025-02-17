@@ -1,10 +1,13 @@
 --[[
     CensuraDev UI Library
-    Version: 3.1
+    Version: 3.2
     Author: LxckStxp
+    
+    A modern, modular UI library for Roblox exploits
+    featuring smooth animations and easy customization.
 --]]
 
--- Global System Table
+-- Initialize Global System
 getgenv().CensuraSystem = {
     Colors = {
         Background = Color3.fromRGB(20, 20, 30),
@@ -18,8 +21,12 @@ getgenv().CensuraSystem = {
     },
     
     UI = {
-        -- Sizes
+        -- Window Configuration
         WindowSize = UDim2.new(0, 300, 0, 400),
+        TitleBarSize = UDim2.new(1, 0, 0, 40),
+        ContentPadding = UDim2.new(0, 5, 0, 45),
+        
+        -- Element Sizes
         ButtonSize = UDim2.new(1, -16, 0, 36),
         ToggleSize = UDim2.new(0, 26, 0, 26),
         SliderSize = UDim2.new(1, -16, 0, 50),
@@ -27,6 +34,7 @@ getgenv().CensuraSystem = {
         -- Styling
         CornerRadius = UDim.new(0, 6),
         Padding = UDim.new(0, 8),
+        ElementSpacing = UDim.new(0, 8),
         
         -- Transparency
         Transparency = {
@@ -44,132 +52,138 @@ getgenv().CensuraSystem = {
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
+-- Load External Modules
+local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
+local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
+
 -- Services
 local Services = {
-    UserInputService = game:GetService("UserInputService"),
     CoreGui = game:GetService("CoreGui"),
+    UserInputService = game:GetService("UserInputService"),
     TweenService = game:GetService("TweenService"),
     RunService = game:GetService("RunService")
 }
 
--- Load Components
-local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
+-- Utility Functions
+local function Create(className, properties)
+    local instance = Instance.new(className)
+    for prop, value in pairs(properties) do
+        instance[prop] = value
+    end
+    return instance
+end
 
--- Example usage of the global system:
+-- Main UI Creation
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
-    -- Create Main GUI
-    self.GUI = Instance.new("ScreenGui")
-    self.GUI.Name = "CensuraUI"
-    self.GUI.ResetOnSpawn = false
+    -- Create ScreenGui
+    self.GUI = Create("ScreenGui", {
+        Name = "CensuraUI",
+        ResetOnSpawn = false
+    })
     
-    -- Main Container using global settings
-    self.MainFrame = Instance.new("Frame")
-    self.MainFrame.Name = "MainFrame"
-    self.MainFrame.Size = CensuraSystem.UI.WindowSize
-    self.MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-    self.MainFrame.BackgroundColor3 = CensuraSystem.Colors.Background
-    self.MainFrame.BackgroundTransparency = CensuraSystem.UI.Transparency.Background
-    self.MainFrame.Parent = self.GUI
+    -- Create Main Frame
+    self.MainFrame = Create("Frame", {
+        Name = "MainFrame",
+        Size = CensuraSystem.UI.WindowSize,
+        Position = UDim2.new(0.5, -150, 0.5, -200),
+        BackgroundColor3 = CensuraSystem.Colors.Background,
+        BackgroundTransparency = CensuraSystem.UI.Transparency.Background,
+        Parent = self.GUI
+    })
     
-    -- Apply Corner
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = CensuraSystem.UI.CornerRadius
-    corner.Parent = self.MainFrame
-    
-    -- Apply Stroke
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = CensuraSystem.Colors.Border
-    stroke.Transparency = 0.7
-    stroke.Thickness = 1.5
-    stroke.Parent = self.MainFrame
+    -- Apply Window Styling
+    Functions.setupWindow(self.MainFrame)
     
     -- Create Title Bar
-    self.TitleBar = Instance.new("Frame")
-    self.TitleBar.Name = "TitleBar"
-    self.TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    self.TitleBar.BackgroundColor3 = CensuraSystem.Colors.Accent
-    self.TitleBar.BackgroundTransparency = CensuraSystem.UI.Transparency.Accent
-    self.TitleBar.Parent = self.MainFrame
+    self.TitleBar = Create("Frame", {
+        Name = "TitleBar",
+        Size = CensuraSystem.UI.TitleBarSize,
+        BackgroundColor3 = CensuraSystem.Colors.Accent,
+        BackgroundTransparency = CensuraSystem.UI.Transparency.Accent,
+        Parent = self.MainFrame
+    })
     
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = CensuraSystem.UI.CornerRadius
-    titleCorner.Parent = self.TitleBar
+    Create("UICorner", {
+        Parent = self.TitleBar,
+        CornerRadius = CensuraSystem.UI.CornerRadius
+    })
     
     -- Title Text
-    local title = Instance.new("TextLabel")
-    title.Text = "Censura"
-    title.Size = UDim2.new(1, 0, 1, 0)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = CensuraSystem.Colors.Text
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-    title.Parent = self.TitleBar
+    Create("TextLabel", {
+        Text = "Censura",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = CensuraSystem.Colors.Text,
+        Font = Enum.Font.GothamBold,
+        TextSize = 18,
+        Parent = self.TitleBar
+    })
     
-    -- Content Frame
-    self.ContentFrame = Instance.new("ScrollingFrame")
-    self.ContentFrame.Name = "ContentFrame"
-    self.ContentFrame.Size = UDim2.new(1, -10, 1, -50)
-    self.ContentFrame.Position = UDim2.new(0, 5, 0, 45)
-    self.ContentFrame.BackgroundTransparency = 1
-    self.ContentFrame.ScrollBarThickness = 2
-    self.ContentFrame.ScrollBarImageColor3 = CensuraSystem.Colors.Accent
-    self.ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    self.ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    self.ContentFrame.Parent = self.MainFrame
+    -- Content Container
+    self.ContentFrame = Create("ScrollingFrame", {
+        Name = "ContentFrame",
+        Position = CensuraSystem.UI.ContentPadding,
+        Size = UDim2.new(1, -10, 1, -50),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = CensuraSystem.Colors.Accent,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Parent = self.MainFrame
+    })
     
     -- Content Layout
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = CensuraSystem.UI.Padding
-    listLayout.Parent = self.ContentFrame
+    Create("UIListLayout", {
+        Parent = self.ContentFrame,
+        Padding = CensuraSystem.UI.ElementSpacing,
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
     
-    -- Initialize Dragging
-    Components.makeDraggable(self.TitleBar, self.MainFrame)
+    -- Initialize Window Functionality
+    Functions.setupDragging(self.TitleBar, self.MainFrame)
     
-    -- Setup Toggle
+    -- Setup Visibility Toggle
     self.Visible = true
-    Services.UserInputService.InputBegan:Connect(function(input, processed)
-        if not processed and input.KeyCode == Enum.KeyCode.RightAlt then
-            self:Toggle()
-        end
+    Functions.setupKeybind(function()
+        self:Toggle()
     end)
     
     return self
 end
 
--- UI Methods (Now using global system)
+-- UI Element Creation Methods
 function CensuraDev:CreateButton(text, callback)
+    assert(type(text) == "string", "Button text must be a string")
+    assert(type(callback) == "function", "Button callback must be a function")
+    
     return Components.createButton(self.ContentFrame, text, callback)
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
+    assert(type(text) == "string", "Toggle text must be a string")
+    assert(type(callback) == "function", "Toggle callback must be a function")
+    
     return Components.createToggle(self.ContentFrame, text, default, callback)
 end
 
 function CensuraDev:CreateSlider(text, min, max, default, callback)
+    assert(type(text) == "string", "Slider text must be a string")
+    assert(type(min) == "number", "Minimum value must be a number")
+    assert(type(max) == "number", "Maximum value must be a number")
+    assert(type(callback) == "function", "Slider callback must be a function")
+    
     return Components.createSlider(self.ContentFrame, text, min, max, default, callback)
 end
 
 -- Visibility Methods
 function CensuraDev:Show()
-    self.GUI.Parent = Services.CoreGui
-    self.Visible = true
-    self.MainFrame.Visible = true
-    
-    Services.TweenService:Create(self.MainFrame, CensuraSystem.UI.TweenInfo, {
-        BackgroundTransparency = CensuraSystem.UI.Transparency.Background
-    }):Play()
+    self.Visible = Functions.handleVisibility(self.GUI, self.MainFrame, true)
 end
 
 function CensuraDev:Hide()
-    Services.TweenService:Create(self.MainFrame, CensuraSystem.UI.TweenInfo, {
-        BackgroundTransparency = 1
-    }):Play()
-    
-    task.wait(CensuraSystem.UI.TweenInfo.Time)
-    self.Visible = false
-    self.MainFrame.Visible = false
+    self.Visible = Functions.handleVisibility(self.GUI, self.MainFrame, false)
 end
 
 function CensuraDev:Toggle()
