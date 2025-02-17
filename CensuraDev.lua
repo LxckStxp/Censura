@@ -21,22 +21,16 @@ getgenv().CensuraSystem = {
     },
     
     UI = {
-        -- Window Configuration
         WindowSize = UDim2.new(0, 300, 0, 400),
         TitleBarSize = UDim2.new(1, 0, 0, 40),
         ContentPadding = UDim2.new(0, 5, 0, 45),
-        
-        -- Element Sizes
         ButtonSize = UDim2.new(1, -16, 0, 36),
         ToggleSize = UDim2.new(0, 26, 0, 26),
         SliderSize = UDim2.new(1, -16, 0, 50),
-        
-        -- Styling
         CornerRadius = UDim.new(0, 6),
         Padding = UDim.new(0, 8),
         ElementSpacing = UDim.new(0, 8),
         
-        -- Transparency
         Transparency = {
             Background = 0.15,
             Accent = 0.08,
@@ -44,7 +38,6 @@ getgenv().CensuraSystem = {
             Elements = 0.04
         },
         
-        -- Animation
         TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
     }
 }
@@ -52,11 +45,9 @@ getgenv().CensuraSystem = {
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
--- Load External Modules
 local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
 local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
 
--- Services
 local Services = {
     CoreGui = game:GetService("CoreGui"),
     UserInputService = game:GetService("UserInputService"),
@@ -64,7 +55,6 @@ local Services = {
     RunService = game:GetService("RunService")
 }
 
--- Utility Functions
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -73,17 +63,17 @@ local function Create(className, properties)
     return instance
 end
 
--- Main UI Creation
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
-    -- Create ScreenGui
     self.GUI = Create("ScreenGui", {
         Name = "CensuraUI",
-        ResetOnSpawn = false
+        ResetOnSpawn = false,
+        Parent = Services.CoreGui
     })
     
-    -- Create Main Frame
+    self.Elements = {} -- Store all UI elements
+    
     self.MainFrame = Create("Frame", {
         Name = "MainFrame",
         Size = CensuraSystem.UI.WindowSize,
@@ -93,10 +83,8 @@ function CensuraDev.new()
         Parent = self.GUI
     })
     
-    -- Apply Window Styling
     Functions.setupWindow(self.MainFrame)
     
-    -- Create Title Bar
     self.TitleBar = Create("Frame", {
         Name = "TitleBar",
         Size = CensuraSystem.UI.TitleBarSize,
@@ -110,8 +98,7 @@ function CensuraDev.new()
         CornerRadius = CensuraSystem.UI.CornerRadius
     })
     
-    -- Title Text
-    Create("TextLabel", {
+    self.TitleText = Create("TextLabel", {
         Text = "Censura",
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
@@ -121,7 +108,6 @@ function CensuraDev.new()
         Parent = self.TitleBar
     })
     
-    -- Content Container
     self.ContentFrame = Create("ScrollingFrame", {
         Name = "ContentFrame",
         Position = CensuraSystem.UI.ContentPadding,
@@ -134,17 +120,14 @@ function CensuraDev.new()
         Parent = self.MainFrame
     })
     
-    -- Content Layout
     Create("UIListLayout", {
         Parent = self.ContentFrame,
         Padding = CensuraSystem.UI.ElementSpacing,
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
-    -- Initialize Window Functionality
     Functions.setupDragging(self.TitleBar, self.MainFrame)
     
-    -- Setup Visibility Toggle
     self.Visible = true
     Functions.setupKeybind(function()
         self:Toggle()
@@ -153,19 +136,22 @@ function CensuraDev.new()
     return self
 end
 
--- UI Element Creation Methods
 function CensuraDev:CreateButton(text, callback)
     assert(type(text) == "string", "Button text must be a string")
     assert(type(callback) == "function", "Button callback must be a function")
     
-    return Components.createButton(self.ContentFrame, text, callback)
+    local button = Components.createButton(self.ContentFrame, text, callback)
+    table.insert(self.Elements, button)
+    return button
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
     assert(type(text) == "string", "Toggle text must be a string")
     assert(type(callback) == "function", "Toggle callback must be a function")
     
-    return Components.createToggle(self.ContentFrame, text, default, callback)
+    local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
+    table.insert(self.Elements, toggle)
+    return toggle
 end
 
 function CensuraDev:CreateSlider(text, min, max, default, callback)
@@ -174,16 +160,28 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     assert(type(max) == "number", "Maximum value must be a number")
     assert(type(callback) == "function", "Slider callback must be a function")
     
-    return Components.createSlider(self.ContentFrame, text, min, max, default, callback)
+    local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
+    table.insert(self.Elements, slider)
+    return slider
 end
 
--- Visibility Methods
+function CensuraDev:RefreshStyles()
+    for _, element in ipairs(self.Elements) do
+        if element.ApplyStyles then
+            element:ApplyStyles()
+        end
+    end
+end
+
 function CensuraDev:Show()
-    self.Visible = Functions.handleVisibility(self.GUI, self.MainFrame, true)
+    self.Visible = true
+    self.GUI.Enabled = true
+    self:RefreshStyles()
 end
 
 function CensuraDev:Hide()
-    self.Visible = Functions.handleVisibility(self.GUI, self.MainFrame, false)
+    self.Visible = false
+    self.GUI.Enabled = false
 end
 
 function CensuraDev:Toggle()
