@@ -1,211 +1,257 @@
 --[[
     CensuraDev UI Library
-    Modern, Semi-Transparent Theme
-    Version 2.0
+    Version: 3.0
+    Author: LxckStxp
+    
+    Features:
+    - Modern, sleek design
+    - Smooth animations
+    - Customizable elements
+    - Right Alt toggle
 --]]
 
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
 -- Services
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
+local Services = {
+    UserInputService = game:GetService("UserInputService"),
+    CoreGui = game:GetService("CoreGui"),
+    TweenService = game:GetService("TweenService"),
+    RunService = game:GetService("RunService")
+}
 
 -- Load Components
 local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
 
--- Modern Color Scheme
-local COLORS = {
-    BACKGROUND = Color3.fromRGB(15, 15, 25),
-    ACCENT = Color3.fromRGB(30, 30, 45),
-    TEXT = Color3.fromRGB(255, 255, 255),
-    HIGHLIGHT = Color3.fromRGB(45, 45, 65),
-    ENABLED = Color3.fromRGB(126, 131, 255),
-    DISABLED = Color3.fromRGB(255, 85, 85),
-    GRADIENT_START = Color3.fromRGB(20, 20, 35),
-    GRADIENT_END = Color3.fromRGB(30, 30, 45)
-}
-
--- UI Configuration
-local UI_SETTINGS = {
-    CORNER_RADIUS = UDim.new(0, 8),
-    PADDING = UDim.new(0, 6),
-    BUTTON_SIZE = UDim2.new(1, -12, 0, 32),
-    TOGGLE_SIZE = UDim2.new(0, 24, 0, 24),
-    SLIDER_SIZE = UDim2.new(1, -12, 0, 45),
-    TRANSPARENCY = {
-        BACKGROUND = 0.2,
-        ACCENT = 0.1,
-        TEXT = 0,
-        ELEMENTS = 0.05
+-- Theme Configuration
+local Theme = {
+    Colors = {
+        Background = Color3.fromRGB(20, 20, 30),
+        Accent = Color3.fromRGB(35, 35, 50),
+        Text = Color3.fromRGB(240, 240, 245),
+        Highlight = Color3.fromRGB(50, 50, 70),
+        Enabled = Color3.fromRGB(98, 150, 255),
+        Disabled = Color3.fromRGB(255, 75, 95),
+        Border = Color3.fromRGB(60, 60, 80),
+        SecondaryText = Color3.fromRGB(180, 180, 190),
+        Gradient = {
+            Start = Color3.fromRGB(25, 25, 35),
+            End = Color3.fromRGB(35, 35, 45)
+        }
+    },
+    
+    UI = {
+        -- Corner Radiuses
+        CornerRadius = UDim.new(0, 6),
+        ButtonRadius = UDim.new(0, 6),
+        ToggleRadius = UDim.new(0, 12),
+        
+        -- Spacing
+        Padding = UDim.new(0, 8),
+        ElementSpacing = UDim.new(0, 10),
+        
+        -- Element Sizes
+        ButtonSize = UDim2.new(1, -16, 0, 36),
+        ToggleSize = UDim2.new(0, 26, 0, 26),
+        SliderSize = UDim2.new(1, -16, 0, 50),
+        
+        -- Window Size
+        WindowSize = UDim2.new(0, 300, 0, 400),
+        TitleBarSize = UDim2.new(1, 0, 0, 40),
+        
+        -- Transparency
+        Transparency = {
+            Background = 0.15,
+            Accent = 0.08,
+            Text = 0,
+            Elements = 0.04
+        },
+        
+        -- Text Settings
+        Font = {
+            Title = Enum.Font.GothamBold,
+            Button = Enum.Font.GothamMedium,
+            Label = Enum.Font.Gotham
+        },
+        
+        TextSize = {
+            Title = 18,
+            Button = 14,
+            Label = 13
+        },
+        
+        -- Animation
+        TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
     }
 }
 
--- Create New UI Instance
+-- Utility Functions
+local function CreateElement(className, properties)
+    local element = Instance.new(className)
+    for property, value in pairs(properties) do
+        element[property] = value
+    end
+    return element
+end
+
+-- Main UI Creation
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
-    -- Main ScreenGui
-    self.ScreenGui = Instance.new("ScreenGui")
-    self.ScreenGui.Name = "CensuraUI"
-    self.ScreenGui.ResetOnSpawn = false
-    
-    -- Main Frame
-    self.MainFrame = Instance.new("Frame")
-    self.MainFrame.Name = "MainFrame"
-    self.MainFrame.Size = UDim2.new(0, 300, 0, 400)
-    self.MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-    self.MainFrame.BackgroundColor3 = COLORS.BACKGROUND
-    self.MainFrame.BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.BACKGROUND
-    self.MainFrame.Parent = self.ScreenGui
-    
-    -- Main Frame Gradient
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLORS.GRADIENT_START),
-        ColorSequenceKeypoint.new(1, COLORS.GRADIENT_END)
+    -- Create ScreenGui
+    self.GUI = CreateElement("ScreenGui", {
+        Name = "CensuraUI",
+        ResetOnSpawn = false
     })
-    gradient.Rotation = 45
-    gradient.Parent = self.MainFrame
     
-    -- Main Frame Corner and Stroke
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
-    corner.Parent = self.MainFrame
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = COLORS.ACCENT
-    stroke.Transparency = 0.7
-    stroke.Thickness = 1.5
-    stroke.Parent = self.MainFrame
-    
-    -- Title Bar
-    self.TitleBar = Instance.new("Frame")
-    self.TitleBar.Name = "TitleBar"
-    self.TitleBar.Size = UDim2.new(1, 0, 0, 32)
-    self.TitleBar.BackgroundColor3 = COLORS.ACCENT
-    self.TitleBar.BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.ACCENT
-    self.TitleBar.Parent = self.MainFrame
-    
-    -- Title Bar Gradient
-    local titleGradient = Instance.new("UIGradient")
-    titleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLORS.ACCENT),
-        ColorSequenceKeypoint.new(1, COLORS.HIGHLIGHT)
+    -- Create Main Window
+    self.MainFrame = CreateElement("Frame", {
+        Name = "MainFrame",
+        Size = Theme.UI.WindowSize,
+        Position = UDim2.new(0.5, -150, 0.5, -200),
+        BackgroundColor3 = Theme.Colors.Background,
+        BackgroundTransparency = Theme.UI.Transparency.Background,
+        Parent = self.GUI
     })
-    titleGradient.Rotation = 90
-    titleGradient.Parent = self.TitleBar
     
-    -- Title Bar Corner
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UI_SETTINGS.CORNER_RADIUS
-    titleCorner.Parent = self.TitleBar
+    -- Apply Window Styling
+    CreateElement("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Colors.Gradient.Start),
+            ColorSequenceKeypoint.new(1, Theme.Colors.Gradient.End)
+        }),
+        Rotation = 45,
+        Parent = self.MainFrame
+    })
     
-    -- Title Text
-    local title = Instance.new("TextLabel")
-    title.Text = "Censura"
-    title.Size = UDim2.new(1, 0, 1, 0)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = COLORS.TEXT
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 16
-    title.Parent = self.TitleBar
+    CreateElement("UICorner", {
+        CornerRadius = Theme.UI.CornerRadius,
+        Parent = self.MainFrame
+    })
     
-    -- Content Frame
-    self.ContentFrame = Instance.new("ScrollingFrame")
-    self.ContentFrame.Name = "ContentFrame"
-    self.ContentFrame.Size = UDim2.new(1, -10, 1, -45)
-    self.ContentFrame.Position = UDim2.new(0, 5, 0, 35)
-    self.ContentFrame.BackgroundTransparency = 1
-    self.ContentFrame.ScrollBarThickness = 2
-    self.ContentFrame.ScrollBarImageColor3 = COLORS.ACCENT
-    self.ContentFrame.Parent = self.MainFrame
+    CreateElement("UIStroke", {
+        Color = Theme.Colors.Border,
+        Transparency = 0.7,
+        Thickness = 1.5,
+        Parent = self.MainFrame
+    })
     
-    -- Content Layout
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UI_SETTINGS.PADDING
-    listLayout.Parent = self.ContentFrame
+    -- Create Title Bar
+    self.TitleBar = CreateElement("Frame", {
+        Name = "TitleBar",
+        Size = Theme.UI.TitleBarSize,
+        BackgroundColor3 = Theme.Colors.Accent,
+        BackgroundTransparency = Theme.UI.Transparency.Accent,
+        Parent = self.MainFrame
+    })
+    
+    CreateElement("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Colors.Accent),
+            ColorSequenceKeypoint.new(1, Theme.Colors.Highlight)
+        }),
+        Rotation = 90,
+        Parent = self.TitleBar
+    })
+    
+    CreateElement("UICorner", {
+        CornerRadius = Theme.UI.CornerRadius,
+        Parent = self.TitleBar
+    })
+    
+    CreateElement("TextLabel", {
+        Text = "Censura",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = Theme.Colors.Text,
+        Font = Theme.UI.Font.Title,
+        TextSize = Theme.UI.TextSize.Title,
+        Parent = self.TitleBar
+    })
+    
+    -- Create Content Area
+    self.ContentFrame = CreateElement("ScrollingFrame", {
+        Name = "ContentFrame",
+        Size = UDim2.new(1, -10, 1, -50),
+        Position = UDim2.new(0, 5, 0, 45),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme.Colors.Accent,
+        Parent = self.MainFrame
+    })
+    
+    CreateElement("UIListLayout", {
+        Padding = Theme.UI.ElementSpacing,
+        Parent = self.ContentFrame
+    })
     
     -- Initialize Dragging
     Components.makeDraggable(self.TitleBar, self.MainFrame)
     
-    -- Visibility Toggle
+    -- Setup Visibility Toggle
     self.Visible = true
-    UserInputService.InputBegan:Connect(function(input, processed)
+    Services.UserInputService.InputBegan:Connect(function(input, processed)
         if not processed and input.KeyCode == Enum.KeyCode.RightAlt then
-            self.Visible = not self.Visible
-            self.MainFrame.Visible = self.Visible
+            self:Toggle()
         end
     end)
     
     return self
 end
 
--- Create Button using Components
+-- UI Methods
 function CensuraDev:CreateButton(text, callback)
-    return Components.createButton(
-        self.ContentFrame,
-        text,
-        callback,
-        COLORS,
-        UI_SETTINGS,
-        TweenService
-    )
+    return Components.createButton(self.ContentFrame, text, callback, Theme.Colors, Theme.UI, Services.TweenService)
 end
 
--- Create Toggle using Components
 function CensuraDev:CreateToggle(text, default, callback)
-    return Components.createToggle(
-        self.ContentFrame,
-        text,
-        default,
-        callback,
-        COLORS,
-        UI_SETTINGS,
-        TweenService
-    )
+    return Components.createToggle(self.ContentFrame, text, default, callback, Theme.Colors, Theme.UI, Services.TweenService)
 end
 
--- Create Slider using Components
 function CensuraDev:CreateSlider(text, min, max, default, callback)
     return Components.createSlider(
-        self.ContentFrame,
-        text,
-        min,
-        max,
-        default,
-        callback,
-        COLORS,
-        UI_SETTINGS,
-        TweenService,
-        UserInputService,
-        RunService
+        self.ContentFrame, 
+        text, 
+        min, 
+        max, 
+        default, 
+        callback, 
+        Theme.Colors, 
+        Theme.UI, 
+        Services.TweenService,
+        Services.UserInputService,
+        Services.RunService
     )
 end
 
--- Show/Hide Methods
+-- Visibility Methods
 function CensuraDev:Show()
-    self.ScreenGui.Parent = CoreGui
+    self.GUI.Parent = Services.CoreGui
     self.Visible = true
     self.MainFrame.Visible = true
     
-    self.MainFrame.BackgroundTransparency = 1
-    TweenService:Create(self.MainFrame, TweenInfo.new(0.2), {
-        BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.BACKGROUND
+    Services.TweenService:Create(self.MainFrame, Theme.UI.TweenInfo, {
+        BackgroundTransparency = Theme.UI.Transparency.Background
     }):Play()
 end
 
 function CensuraDev:Hide()
-    TweenService:Create(self.MainFrame, TweenInfo.new(0.2), {
+    Services.TweenService:Create(self.MainFrame, Theme.UI.TweenInfo, {
         BackgroundTransparency = 1
     }):Play()
     
-    task.wait(0.2)
+    task.wait(Theme.UI.TweenInfo.Time)
     self.Visible = false
     self.MainFrame.Visible = false
+end
+
+function CensuraDev:Toggle()
+    if self.Visible then
+        self:Hide()
+    else
+        self:Show()
+    end
 end
 
 return CensuraDev
