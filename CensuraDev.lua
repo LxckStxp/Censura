@@ -1,11 +1,14 @@
 --[[
     CensuraDev UI Library
-    Version: 3.2
+    Version: 3.3
     Author: LxckStxp
     
     A modern, modular UI library for Roblox exploits
     featuring smooth animations and easy customization.
 --]]
+
+local CensuraDev = {}
+CensuraDev.__index = CensuraDev
 
 -- Initialize Global System
 getgenv().CensuraSystem = {
@@ -42,12 +45,7 @@ getgenv().CensuraSystem = {
     }
 }
 
-local CensuraDev = {}
-CensuraDev.__index = CensuraDev
-
-local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
-local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
-
+-- Services
 local Services = {
     CoreGui = game:GetService("CoreGui"),
     UserInputService = game:GetService("UserInputService"),
@@ -55,6 +53,11 @@ local Services = {
     RunService = game:GetService("RunService")
 }
 
+-- Load External Modules
+local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
+local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
+
+-- Utility Functions
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -63,17 +66,42 @@ local function Create(className, properties)
     return instance
 end
 
+-- Element Class
+local UIElement = {}
+UIElement.__index = UIElement
+
+function UIElement.new(elementType, instance, properties)
+    local self = setmetatable({}, UIElement)
+    self.Type = elementType
+    self.Instance = instance
+    self.Properties = properties
+    self.StyleData = {}
+    return self
+end
+
+function UIElement:ApplyStyle()
+    for object, properties in pairs(self.StyleData) do
+        for property, value in pairs(properties) do
+            object[property] = value
+        end
+    end
+end
+
+-- Main UI Creation
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
+    self.Elements = {}
+    self.Visible = true
+    
+    -- Create ScreenGui
     self.GUI = Create("ScreenGui", {
         Name = "CensuraUI",
         ResetOnSpawn = false,
         Parent = Services.CoreGui
     })
     
-    self.Elements = {} -- Store all UI elements
-    
+    -- Create Main Frame
     self.MainFrame = Create("Frame", {
         Name = "MainFrame",
         Size = CensuraSystem.UI.WindowSize,
@@ -83,8 +111,10 @@ function CensuraDev.new()
         Parent = self.GUI
     })
     
+    -- Apply Window Styling
     Functions.setupWindow(self.MainFrame)
     
+    -- Create Title Bar
     self.TitleBar = Create("Frame", {
         Name = "TitleBar",
         Size = CensuraSystem.UI.TitleBarSize,
@@ -98,6 +128,7 @@ function CensuraDev.new()
         CornerRadius = CensuraSystem.UI.CornerRadius
     })
     
+    -- Title Text
     self.TitleText = Create("TextLabel", {
         Text = "Censura",
         Size = UDim2.new(1, 0, 1, 0),
@@ -108,6 +139,7 @@ function CensuraDev.new()
         Parent = self.TitleBar
     })
     
+    -- Content Container
     self.ContentFrame = Create("ScrollingFrame", {
         Name = "ContentFrame",
         Position = CensuraSystem.UI.ContentPadding,
@@ -126,9 +158,8 @@ function CensuraDev.new()
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     
+    -- Initialize Window Functionality
     Functions.setupDragging(self.TitleBar, self.MainFrame)
-    
-    self.Visible = true
     Functions.setupKeybind(function()
         self:Toggle()
     end)
@@ -137,39 +168,84 @@ function CensuraDev.new()
 end
 
 function CensuraDev:CreateButton(text, callback)
-    assert(type(text) == "string", "Button text must be a string")
-    assert(type(callback) == "function", "Button callback must be a function")
-    
     local button = Components.createButton(self.ContentFrame, text, callback)
-    table.insert(self.Elements, button)
-    return button
+    local element = UIElement.new("Button", button, {
+        Text = text,
+        Callback = callback
+    })
+    
+    element.StyleData = {
+        [button] = {
+            BackgroundColor3 = CensuraSystem.Colors.Accent,
+            BackgroundTransparency = CensuraSystem.UI.Transparency.Elements
+        },
+        [button:FindFirstChild("TextLabel")] = {
+            TextColor3 = CensuraSystem.Colors.Text
+        }
+    }
+    
+    table.insert(self.Elements, element)
+    element:ApplyStyle()
+    return element
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
-    assert(type(text) == "string", "Toggle text must be a string")
-    assert(type(callback) == "function", "Toggle callback must be a function")
-    
     local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
-    table.insert(self.Elements, toggle)
-    return toggle
+    local element = UIElement.new("Toggle", toggle, {
+        Text = text,
+        Enabled = default,
+        Callback = callback
+    })
+    
+    element.StyleData = {
+        [toggle] = {
+            BackgroundColor3 = CensuraSystem.Colors.Accent,
+            BackgroundTransparency = CensuraSystem.UI.Transparency.Elements
+        },
+        [toggle:FindFirstChild("TextLabel")] = {
+            TextColor3 = CensuraSystem.Colors.Text
+        },
+        [toggle:FindFirstChild("Indicator")] = {
+            BackgroundColor3 = default and CensuraSystem.Colors.Enabled or CensuraSystem.Colors.Disabled
+        }
+    }
+    
+    table.insert(self.Elements, element)
+    element:ApplyStyle()
+    return element
 end
 
 function CensuraDev:CreateSlider(text, min, max, default, callback)
-    assert(type(text) == "string", "Slider text must be a string")
-    assert(type(min) == "number", "Minimum value must be a number")
-    assert(type(max) == "number", "Maximum value must be a number")
-    assert(type(callback) == "function", "Slider callback must be a function")
-    
     local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
-    table.insert(self.Elements, slider)
-    return slider
+    local element = UIElement.new("Slider", slider, {
+        Text = text,
+        Min = min,
+        Max = max,
+        Value = default,
+        Callback = callback
+    })
+    
+    element.StyleData = {
+        [slider] = {
+            BackgroundColor3 = CensuraSystem.Colors.Accent,
+            BackgroundTransparency = CensuraSystem.UI.Transparency.Elements
+        },
+        [slider:FindFirstChild("TextLabel")] = {
+            TextColor3 = CensuraSystem.Colors.Text
+        },
+        [slider:FindFirstChild("SliderBar")] = {
+            BackgroundColor3 = CensuraSystem.Colors.Enabled
+        }
+    }
+    
+    table.insert(self.Elements, element)
+    element:ApplyStyle()
+    return element
 end
 
 function CensuraDev:RefreshStyles()
     for _, element in ipairs(self.Elements) do
-        if element.ApplyStyles then
-            element:ApplyStyles()
-        end
+        element:ApplyStyle()
     end
 end
 
