@@ -1,31 +1,29 @@
 --[[
     CensuraDev UI Library
-    Version: 3.0
+    Version: 3.1
     Author: LxckStxp
     
-    Features:
-    - Modern, sleek design
-    - Smooth animations
-    - Customizable elements
-    - Right Alt toggle
+    A lightweight, modern UI library for Roblox exploits
+    featuring smooth animations and customizable elements.
 --]]
 
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
--- Services
+-- Service Initialization
 local Services = {
     UserInputService = game:GetService("UserInputService"),
     CoreGui = game:GetService("CoreGui"),
     TweenService = game:GetService("TweenService"),
-    RunService = game:GetService("RunService")
+    RunService = game:GetService("RunService"),
+    HttpService = game:GetService("HttpService")
 }
 
--- Load Components
+-- Load Components Module
 local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
 
--- Theme Configuration
-local Theme = {
+-- UI Configuration
+local Config = {
     Colors = {
         Background = Color3.fromRGB(20, 20, 30),
         Accent = Color3.fromRGB(35, 35, 50),
@@ -34,165 +32,134 @@ local Theme = {
         Enabled = Color3.fromRGB(98, 150, 255),
         Disabled = Color3.fromRGB(255, 75, 95),
         Border = Color3.fromRGB(60, 60, 80),
-        SecondaryText = Color3.fromRGB(180, 180, 190),
-        Gradient = {
-            Start = Color3.fromRGB(25, 25, 35),
-            End = Color3.fromRGB(35, 35, 45)
-        }
+        SecondaryText = Color3.fromRGB(180, 180, 190)
     },
     
-    UI = {
-        -- Corner Radiuses
+    Window = {
+        Size = UDim2.new(0, 300, 0, 400),
+        Position = UDim2.new(0.5, -150, 0.5, -200),
+        Padding = UDim2.new(0, 10),
+        ToggleKey = Enum.KeyCode.RightAlt,
+        Animation = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
+    },
+    
+    Elements = {
         CornerRadius = UDim.new(0, 6),
-        ButtonRadius = UDim.new(0, 6),
-        ToggleRadius = UDim.new(0, 12),
-        
-        -- Spacing
-        Padding = UDim.new(0, 8),
-        ElementSpacing = UDim.new(0, 10),
-        
-        -- Element Sizes
         ButtonSize = UDim2.new(1, -16, 0, 36),
         ToggleSize = UDim2.new(0, 26, 0, 26),
         SliderSize = UDim2.new(1, -16, 0, 50),
+        Spacing = UDim.new(0, 8),
         
-        -- Window Size
-        WindowSize = UDim2.new(0, 300, 0, 400),
-        TitleBarSize = UDim2.new(1, 0, 0, 40),
-        
-        -- Transparency
         Transparency = {
             Background = 0.15,
             Accent = 0.08,
             Text = 0,
             Elements = 0.04
-        },
-        
-        -- Text Settings
+        }
+    },
+    
+    Text = {
         Font = {
             Title = Enum.Font.GothamBold,
-            Button = Enum.Font.GothamMedium,
-            Label = Enum.Font.Gotham
+            Element = Enum.Font.GothamMedium
         },
-        
-        TextSize = {
+        Size = {
             Title = 18,
-            Button = 14,
-            Label = 13
-        },
-        
-        -- Animation
-        TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
+            Element = 14
+        }
     }
 }
 
 -- Utility Functions
-local function CreateElement(className, properties)
-    local element = Instance.new(className)
-    for property, value in pairs(properties) do
-        element[property] = value
+local function CreateInstance(className, properties)
+    local instance = Instance.new(className)
+    for prop, value in pairs(properties) do
+        instance[prop] = value
     end
-    return element
+    return instance
 end
 
 -- Main UI Creation
 function CensuraDev.new()
     local self = setmetatable({}, CensuraDev)
     
-    -- Create ScreenGui
-    self.GUI = CreateElement("ScreenGui", {
+    -- Create Main Container
+    self.GUI = CreateInstance("ScreenGui", {
         Name = "CensuraUI",
         ResetOnSpawn = false
     })
     
-    -- Create Main Window
-    self.MainFrame = CreateElement("Frame", {
+    self.MainFrame = CreateInstance("Frame", {
         Name = "MainFrame",
-        Size = Theme.UI.WindowSize,
-        Position = UDim2.new(0.5, -150, 0.5, -200),
-        BackgroundColor3 = Theme.Colors.Background,
-        BackgroundTransparency = Theme.UI.Transparency.Background,
+        Size = Config.Window.Size,
+        Position = Config.Window.Position,
+        BackgroundColor3 = Config.Colors.Background,
+        BackgroundTransparency = Config.Elements.Transparency.Background,
         Parent = self.GUI
     })
     
-    -- Apply Window Styling
-    CreateElement("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Colors.Gradient.Start),
-            ColorSequenceKeypoint.new(1, Theme.Colors.Gradient.End)
-        }),
-        Rotation = 45,
+    -- Apply Styling
+    CreateInstance("UICorner", {
+        CornerRadius = Config.Elements.CornerRadius,
         Parent = self.MainFrame
     })
     
-    CreateElement("UICorner", {
-        CornerRadius = Theme.UI.CornerRadius,
-        Parent = self.MainFrame
-    })
-    
-    CreateElement("UIStroke", {
-        Color = Theme.Colors.Border,
+    CreateInstance("UIStroke", {
+        Color = Config.Colors.Border,
         Transparency = 0.7,
         Thickness = 1.5,
         Parent = self.MainFrame
     })
     
     -- Create Title Bar
-    self.TitleBar = CreateElement("Frame", {
+    self.TitleBar = CreateInstance("Frame", {
         Name = "TitleBar",
-        Size = Theme.UI.TitleBarSize,
-        BackgroundColor3 = Theme.Colors.Accent,
-        BackgroundTransparency = Theme.UI.Transparency.Accent,
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = Config.Colors.Accent,
+        BackgroundTransparency = Config.Elements.Transparency.Accent,
         Parent = self.MainFrame
     })
     
-    CreateElement("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Colors.Accent),
-            ColorSequenceKeypoint.new(1, Theme.Colors.Highlight)
-        }),
-        Rotation = 90,
+    CreateInstance("UICorner", {
+        CornerRadius = Config.Elements.CornerRadius,
         Parent = self.TitleBar
     })
     
-    CreateElement("UICorner", {
-        CornerRadius = Theme.UI.CornerRadius,
-        Parent = self.TitleBar
-    })
-    
-    CreateElement("TextLabel", {
+    CreateInstance("TextLabel", {
         Text = "Censura",
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
-        TextColor3 = Theme.Colors.Text,
-        Font = Theme.UI.Font.Title,
-        TextSize = Theme.UI.TextSize.Title,
+        TextColor3 = Config.Colors.Text,
+        Font = Config.Text.Font.Title,
+        TextSize = Config.Text.Size.Title,
         Parent = self.TitleBar
     })
     
-    -- Create Content Area
-    self.ContentFrame = CreateElement("ScrollingFrame", {
+    -- Create Content Container
+    self.ContentFrame = CreateInstance("ScrollingFrame", {
         Name = "ContentFrame",
         Size = UDim2.new(1, -10, 1, -50),
         Position = UDim2.new(0, 5, 0, 45),
         BackgroundTransparency = 1,
         ScrollBarThickness = 2,
-        ScrollBarImageColor3 = Theme.Colors.Accent,
+        ScrollBarImageColor3 = Config.Colors.Accent,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
         Parent = self.MainFrame
     })
     
-    CreateElement("UIListLayout", {
-        Padding = Theme.UI.ElementSpacing,
+    CreateInstance("UIListLayout", {
+        Padding = Config.Elements.Spacing,
         Parent = self.ContentFrame
     })
     
     -- Initialize Dragging
     Components.makeDraggable(self.TitleBar, self.MainFrame)
     
-    -- Setup Visibility Toggle
+    -- Setup Toggle Functionality
     self.Visible = true
     Services.UserInputService.InputBegan:Connect(function(input, processed)
-        if not processed and input.KeyCode == Enum.KeyCode.RightAlt then
+        if not processed and input.KeyCode == Config.Window.ToggleKey then
             self:Toggle()
         end
     end)
@@ -200,25 +167,51 @@ function CensuraDev.new()
     return self
 end
 
--- UI Methods
+-- UI Element Creation Methods
 function CensuraDev:CreateButton(text, callback)
-    return Components.createButton(self.ContentFrame, text, callback, Theme.Colors, Theme.UI, Services.TweenService)
+    assert(type(text) == "string", "Button text must be a string")
+    assert(type(callback) == "function", "Button callback must be a function")
+    
+    return Components.createButton(
+        self.ContentFrame,
+        text,
+        callback,
+        Config.Colors,
+        Config.Elements,
+        Services.TweenService
+    )
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
-    return Components.createToggle(self.ContentFrame, text, default, callback, Theme.Colors, Theme.UI, Services.TweenService)
+    assert(type(text) == "string", "Toggle text must be a string")
+    assert(type(callback) == "function", "Toggle callback must be a function")
+    
+    return Components.createToggle(
+        self.ContentFrame,
+        text,
+        default,
+        callback,
+        Config.Colors,
+        Config.Elements,
+        Services.TweenService
+    )
 end
 
 function CensuraDev:CreateSlider(text, min, max, default, callback)
+    assert(type(text) == "string", "Slider text must be a string")
+    assert(type(min) == "number", "Minimum value must be a number")
+    assert(type(max) == "number", "Maximum value must be a number")
+    assert(type(callback) == "function", "Slider callback must be a function")
+    
     return Components.createSlider(
-        self.ContentFrame, 
-        text, 
-        min, 
-        max, 
-        default, 
-        callback, 
-        Theme.Colors, 
-        Theme.UI, 
+        self.ContentFrame,
+        text,
+        min,
+        max,
+        default,
+        callback,
+        Config.Colors,
+        Config.Elements,
         Services.TweenService,
         Services.UserInputService,
         Services.RunService
@@ -231,17 +224,21 @@ function CensuraDev:Show()
     self.Visible = true
     self.MainFrame.Visible = true
     
-    Services.TweenService:Create(self.MainFrame, Theme.UI.TweenInfo, {
-        BackgroundTransparency = Theme.UI.Transparency.Background
-    }):Play()
+    Services.TweenService:Create(
+        self.MainFrame, 
+        Config.Window.Animation,
+        {BackgroundTransparency = Config.Elements.Transparency.Background}
+    ):Play()
 end
 
 function CensuraDev:Hide()
-    Services.TweenService:Create(self.MainFrame, Theme.UI.TweenInfo, {
-        BackgroundTransparency = 1
-    }):Play()
+    Services.TweenService:Create(
+        self.MainFrame,
+        Config.Window.Animation,
+        {BackgroundTransparency = 1}
+    ):Play()
     
-    task.wait(Theme.UI.TweenInfo.Time)
+    task.wait(Config.Window.Animation.Time)
     self.Visible = false
     self.MainFrame.Visible = false
 end
