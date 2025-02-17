@@ -1,6 +1,11 @@
 local Components = {}
 
--- Utility function to create basic instance with properties
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Utility function for creating instances
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -9,128 +14,81 @@ local function Create(className, properties)
     return instance
 end
 
--- Create Window
-function Components.createWindow()
-    local window = Create("ScreenGui", {
-        Name = "CensuraUI",
-        ResetOnSpawn = false
-    })
+-- Button Component
+function Components.createButton(parent, text, callback)
+    -- Example of accessing global system
+    local System = getgenv().CensuraSystem
     
-    local mainFrame = Create("Frame", {
-        Name = "MainFrame",
-        Parent = window,
-        Size = UDim2.new(0, 300, 0, 400),
-        Position = UDim2.new(0.5, -150, 0.5, -200),
-        BackgroundColor3 = Color3.fromRGB(20, 20, 30),
-        BackgroundTransparency = 0.15
-    })
-    
-    local titleBar = Create("Frame", {
-        Name = "TitleBar",
-        Parent = mainFrame,
-        Size = UDim2.new(1, 0, 0, 40),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 50),
-        BackgroundTransparency = 0.08
-    })
-    
-    local title = Create("TextLabel", {
-        Parent = titleBar,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "Censura",
-        TextColor3 = Color3.fromRGB(240, 240, 245),
-        Font = Enum.Font.GothamBold,
-        TextSize = 18
-    })
-    
-    local contentFrame = Create("ScrollingFrame", {
-        Name = "ContentFrame",
-        Parent = mainFrame,
-        Position = UDim2.new(0, 5, 0, 45),
-        Size = UDim2.new(1, -10, 1, -50),
-        BackgroundTransparency = 1,
-        ScrollBarThickness = 2,
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new(0, 0, 0, 0)
-    })
-    
-    Create("UIListLayout", {
-        Parent = contentFrame,
-        Padding = UDim.new(0, 8)
-    })
-    
-    -- Apply corners
-    for _, frame in pairs({mainFrame, titleBar}) do
-        Create("UICorner", {
-            Parent = frame,
-            CornerRadius = UDim.new(0, 6)
-        })
-    end
-    
-    return window, mainFrame, contentFrame
-end
-
--- Create Button
-function Components.createButton(parent, text, callback, COLORS, UI_SETTINGS)
     local button = Create("TextButton", {
         Parent = parent,
-        Size = UI_SETTINGS.BUTTON_SIZE,
-        BackgroundColor3 = COLORS.ACCENT,
-        BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.ELEMENTS,
+        Size = System.UI.ButtonSize,
+        BackgroundColor3 = System.Colors.Accent,
+        BackgroundTransparency = System.UI.Transparency.Elements,
         Text = text,
-        TextColor3 = COLORS.TEXT,
+        TextColor3 = System.Colors.Text,
         Font = Enum.Font.GothamSemibold,
-        TextSize = 14
+        TextSize = 14,
+        AutoButtonColor = false -- We'll handle hover effects manually
     })
     
+    -- Apply corner
     Create("UICorner", {
         Parent = button,
-        CornerRadius = UI_SETTINGS.CORNER_RADIUS
+        CornerRadius = System.UI.CornerRadius
     })
     
-    -- Hover Effects
-    local function updateColor(isHovered)
-        button.BackgroundColor3 = isHovered and COLORS.HIGHLIGHT or COLORS.ACCENT
-    end
+    -- Hover effects
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, System.UI.TweenInfo, {
+            BackgroundColor3 = System.Colors.Highlight
+        }):Play()
+    end)
     
-    button.MouseEnter:Connect(function() updateColor(true) end)
-    button.MouseLeave:Connect(function() updateColor(false) end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, System.UI.TweenInfo, {
+            BackgroundColor3 = System.Colors.Accent
+        }):Play()
+    end)
+    
     button.MouseButton1Click:Connect(callback)
-    
     return button
 end
 
--- Create Toggle
-function Components.createToggle(parent, text, default, callback, COLORS, UI_SETTINGS)
+-- Toggle Component
+function Components.createToggle(parent, text, default, callback)
+    local System = getgenv().CensuraSystem
+    
     local container = Create("Frame", {
         Parent = parent,
-        Size = UI_SETTINGS.BUTTON_SIZE,
-        BackgroundColor3 = COLORS.ACCENT,
-        BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.ELEMENTS
+        Size = System.UI.ButtonSize,
+        BackgroundColor3 = System.Colors.Accent,
+        BackgroundTransparency = System.UI.Transparency.Elements
     })
     
     Create("UICorner", {
         Parent = container,
-        CornerRadius = UI_SETTINGS.CORNER_RADIUS
+        CornerRadius = System.UI.CornerRadius
     })
     
+    -- Text Label
     local label = Create("TextLabel", {
         Parent = container,
         Position = UDim2.new(0, 10, 0, 0),
         Size = UDim2.new(1, -44, 1, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = COLORS.TEXT,
+        TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
         Font = Enum.Font.GothamSemibold,
         TextSize = 14
     })
     
+    -- Toggle Button
     local toggle = Create("TextButton", {
         Parent = container,
         Position = UDim2.new(1, -34, 0.5, -12),
-        Size = UI_SETTINGS.TOGGLE_SIZE,
-        BackgroundColor3 = default and COLORS.ENABLED or COLORS.DISABLED,
+        Size = System.UI.ToggleSize,
+        BackgroundColor3 = default and System.Colors.Enabled or System.Colors.Disabled,
         Text = ""
     })
     
@@ -139,37 +97,44 @@ function Components.createToggle(parent, text, default, callback, COLORS, UI_SET
         CornerRadius = UDim.new(0, 12)
     })
     
+    -- Toggle Logic
     local enabled = default or false
     toggle.MouseButton1Click:Connect(function()
         enabled = not enabled
-        toggle.BackgroundColor3 = enabled and COLORS.ENABLED or COLORS.DISABLED
+        TweenService:Create(toggle, System.UI.TweenInfo, {
+            BackgroundColor3 = enabled and System.Colors.Enabled or System.Colors.Disabled
+        }):Play()
         callback(enabled)
     end)
     
     return container
 end
 
--- Create Slider
-function Components.createSlider(parent, text, min, max, default, callback, COLORS, UI_SETTINGS)
+-- Slider Component
+function Components.createSlider(parent, text, min, max, default, callback)
+    local System = getgenv().CensuraSystem
+    
+    -- Container
     local container = Create("Frame", {
         Parent = parent,
-        Size = UI_SETTINGS.SLIDER_SIZE,
-        BackgroundColor3 = COLORS.ACCENT,
-        BackgroundTransparency = UI_SETTINGS.TRANSPARENCY.ELEMENTS
+        Size = System.UI.SliderSize,
+        BackgroundColor3 = System.Colors.Accent,
+        BackgroundTransparency = System.UI.Transparency.Elements
     })
     
     Create("UICorner", {
         Parent = container,
-        CornerRadius = UI_SETTINGS.CORNER_RADIUS
+        CornerRadius = System.UI.CornerRadius
     })
     
+    -- Labels
     local label = Create("TextLabel", {
         Parent = container,
         Position = UDim2.new(0, 10, 0, 0),
         Size = UDim2.new(1, -70, 0, 20),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = COLORS.TEXT,
+        TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
         Font = Enum.Font.GothamSemibold,
         TextSize = 14
@@ -181,37 +146,43 @@ function Components.createSlider(parent, text, min, max, default, callback, COLO
         Size = UDim2.new(0, 50, 0, 20),
         BackgroundTransparency = 1,
         Text = tostring(default),
-        TextColor3 = COLORS.TEXT,
+        TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Right,
         Font = Enum.Font.GothamSemibold,
         TextSize = 14
     })
     
+    -- Slider Bar
     local sliderBar = Create("Frame", {
         Parent = container,
         Position = UDim2.new(0, 10, 0.7, 0),
         Size = UDim2.new(1, -20, 0, 4),
-        BackgroundColor3 = COLORS.BACKGROUND
+        BackgroundColor3 = System.Colors.Background
     })
     
+    Create("UICorner", {
+        Parent = sliderBar,
+        CornerRadius = UDim.new(0, 2)
+    })
+    
+    -- Slider Fill
     local fill = Create("Frame", {
         Parent = sliderBar,
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = COLORS.ENABLED
+        BackgroundColor3 = System.Colors.Enabled
     })
     
-    for _, frame in pairs({sliderBar, fill}) do
-        Create("UICorner", {
-            Parent = frame,
-            CornerRadius = UDim.new(0, 2)
-        })
-    end
+    Create("UICorner", {
+        Parent = fill,
+        CornerRadius = UDim.new(0, 2)
+    })
     
+    -- Slider Button
     local button = Create("TextButton", {
         Parent = sliderBar,
         Position = UDim2.new((default - min) / (max - min), -8, 0.5, -8),
         Size = UDim2.new(0, 16, 0, 16),
-        BackgroundColor3 = COLORS.ENABLED,
+        BackgroundColor3 = System.Colors.Enabled,
         Text = ""
     })
     
@@ -220,19 +191,23 @@ function Components.createSlider(parent, text, min, max, default, callback, COLO
         CornerRadius = UDim.new(1, 0)
     })
     
+    -- Slider Logic
     local dragging = false
     local value = default
     
-    button.MouseButton1Down:Connect(function() dragging = true end)
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    button.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
     
-    game:GetService("RunService").RenderStepped:Connect(function()
+    RunService.RenderStepped:Connect(function()
         if dragging then
-            local mouse = game:GetService("UserInputService"):GetMouseLocation()
+            local mouse = UserInputService:GetMouseLocation()
             local pos = (mouse.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
             pos = math.clamp(pos, 0, 1)
             value = min + ((max - min) * pos)
@@ -247,26 +222,28 @@ function Components.createSlider(parent, text, min, max, default, callback, COLO
     return container
 end
 
--- Make Window Draggable
+-- Window Dragging
 function Components.makeDraggable(titleBar, mainFrame)
-    local dragging, dragInput, dragStart, startPos
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
     
     titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
     end)
     
-    titleBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
             local delta = input.Position - dragStart
             mainFrame.Position = UDim2.new(
                 startPos.X.Scale,
