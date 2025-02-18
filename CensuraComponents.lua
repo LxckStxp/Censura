@@ -1,20 +1,45 @@
 --[[
     CensuraDev Components Module
-    Version: 4.1
+    Version: 4.2
     
-    Provides modular UI components with optimized performance and smooth animations
+    Optimized UI components with enhanced performance and reliability
 ]]
 
 local Components = {}
 
 -- Services
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local Services = {
+    UserInput = game:GetService("UserInputService"),
+    Tween = game:GetService("TweenService"),
+    Run = game:GetService("RunService")
+}
 
 -- Constants
 local TWEEN_INFO = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local CLICK_ANIMATION_SCALE = 0.95
+
+-- Connection Management
+local ConnectionManager = {
+    new = function()
+        local connections = {}
+        
+        return {
+            add = function(connection)
+                table.insert(connections, connection)
+                return connection
+            end,
+            
+            clear = function()
+                for _, connection in ipairs(connections) do
+                    if typeof(connection) == "RBXScriptConnection" then
+                        connection:Disconnect()
+                    end
+                end
+                table.clear(connections)
+            end
+        }
+    end
+}
 
 -- Utility Functions
 local function Create(className, properties)
@@ -26,27 +51,64 @@ local function Create(className, properties)
 end
 
 local function CreateTween(instance, properties)
-    return TweenService:Create(instance, TWEEN_INFO, properties)
+    return Services.Tween:Create(instance, TWEEN_INFO, properties)
 end
 
---[[ Button Component
-    Example usage:
-    local button = Components.createButton(parent, "Click Me", function()
-        print("Button clicked!")
-    end)
-]]
-function Components.createButton(parent, text, callback)
-    local System = getgenv().CensuraSystem
-    
-    -- Create container
-    local container = Create("Frame", {
-        Name = "ButtonContainer",
-        Parent = parent,
-        Size = System.UI.ButtonSize,
-        BackgroundTransparency = 1
-    })
-    
-    -- Create button
+local function SafeCallback(callback, ...)
+    if typeof(callback) == "function" then
+        local success, result = pcall(callback, ...)
+        if not success then
+            warn("Callback error:", result)
+        end
+    end
+end
+
+-- Component Base
+local function CreateComponent(name, initFn)
+    return function(...)
+        local System = getgenv().CensuraSystem
+        if not System then
+            error("CensuraSystem not initialized")
+            return nil
+        end
+        
+        local container = Create("Frame", {
+            Name = name .. "Container",
+            BackgroundTransparency = 1,
+            Size = System.UI.ButtonSize
+        })
+        
+        -- Connection management
+        local connections = ConnectionManager.new()
+        local tweens = {}
+        
+        -- Cleanup handler
+        container.Destroying:Connect(function()
+            connections.clear()
+            for _, tween in ipairs(tweens) do
+                tween:Cancel()
+            end
+            table.clear(tweens)
+        end)
+        
+        -- Initialize component
+        local success, result = pcall(initFn, container, connections, tweens, System, ...)
+        
+        if not success then
+            warn("Failed to create " .. name .. ":", result)
+            container:Destroy()
+            return nil
+        end
+        
+        -- Set parent last
+        container.Parent = select(1, ...)
+        
+        return container
+    end
+end
+
+-- Button Component
+Components.createButton = CreateComponent("Button", function(container, connections, tweens, System, parent, text, callback)
     local button = Create("TextButton", {
         Name = "Button",
         Parent = container,
@@ -60,83 +122,57 @@ function Components.createButton(parent, text, callback)
         AutoButtonColor = false
     })
     
-    -- Apply corner
     Create("UICorner", {
         Parent = button,
         CornerRadius = System.UI.CornerRadius
     })
     
-    -- Button animations
-    local currentTween
-    local isHovered = false
-    
     -- Hover effect
-    button.MouseEnter:Connect(function()
-        isHovered = true
-        if currentTween then currentTween:Cancel() end
-        currentTween = CreateTween(button, {
-            BackgroundColor3 = System.Colors.Highlight
-        })
-        currentTween:Play()
-    end)
+    connections.add(button.MouseEnter:Connect(function()
+        local tween = CreateTween(button, {BackgroundColor3 = System.Colors.Highlight})
+        table.insert(tweens, tween)
+        tween:Play()
+    end))
     
-    button.MouseLeave:Connect(function()
-        isHovered = false
-        if currentTween then currentTween:Cancel() end
-        currentTween = CreateTween(button, {
-            BackgroundColor3 = System.Colors.Accent
-        })
-        currentTween:Play()
-    end)
+    connections.add(button.MouseLeave:Connect(function()
+        local tween = CreateTween(button, {BackgroundColor3 = System.Colors.Accent})
+        table.insert(tweens, tween)
+        tween:Play()
+    end))
     
     -- Click animation
-    button.MouseButton1Down:Connect(function()
-        if currentTween then currentTween:Cancel() end
-        CreateTween(button, {Size = UDim2.new(CLICK_ANIMATION_SCALE, 0, CLICK_ANIMATION_SCALE, 0)}):Play()
-    end)
+    connections.add(button.MouseButton1Down:Connect(function()
+        local tween = CreateTween(button, {
+            Size = UDim2.new(CLICK_ANIMATION_SCALE, 0, CLICK_ANIMATION_SCALE, 0)
+        })
+        table.insert(tweens, tween)
+        tween:Play()
+    end))
     
-    button.MouseButton1Up:Connect(function()
-        if currentTween then currentTween:Cancel() end
-        CreateTween(button, {Size = UDim2.new(1, 0, 1, 0)}):Play()
-    end)
+    connections.add(button.MouseButton1Up:Connect(function()
+        local tween = CreateTween(button, {
+            Size = UDim2.new(1, 0, 1, 0)
+        })
+        table.insert(tweens, tween)
+        tween:Play()
+    end))
     
-    button.MouseButton1Click:Connect(function()
-        callback()
-    end)
-    
-    -- Cleanup method
-    function container:Destroy()
-        if currentTween then currentTween:Cancel() end
-        container:Destroy()
-    end
-    
-    return container
-end
+    connections.add(button.MouseButton1Click:Connect(function()
+        SafeCallback(callback)
+    end))
+end)
 
---[[ Toggle Component
-    Example usage:
-    local toggle = Components.createToggle(parent, "Enable Feature", false, function(enabled)
-        print("Toggle state:", enabled)
-    end)
-]]
-function Components.createToggle(parent, text, default, callback)
-    local System = getgenv().CensuraSystem
-    
-    -- Create container
-    local container = Create("Frame", {
-        Name = "ToggleContainer",
-        Parent = parent,
-        Size = System.UI.ButtonSize,
-        BackgroundColor3 = System.Colors.Accent,
-        BackgroundTransparency = System.UI.Transparency.Elements
-    })
+-- Toggle Component
+Components.createToggle = CreateComponent("Toggle", function(container, connections, tweens, System, parent, text, default, callback)
+    container.Size = System.UI.ButtonSize
+    container.BackgroundColor3 = System.Colors.Accent
+    container.BackgroundTransparency = System.UI.Transparency.Elements
     
     Create("UICorner", {
         Parent = container,
         CornerRadius = System.UI.CornerRadius
     })
     
-    -- Create label
     local label = Create("TextLabel", {
         Name = "Label",
         Parent = container,
@@ -150,7 +186,6 @@ function Components.createToggle(parent, text, default, callback)
         TextSize = 14
     })
     
-    -- Create toggle button
     local toggle = Create("TextButton", {
         Name = "Toggle",
         Parent = container,
@@ -165,48 +200,26 @@ function Components.createToggle(parent, text, default, callback)
         CornerRadius = UDim.new(0, 12)
     })
     
-    -- Toggle state and animation
     local enabled = default or false
-    local currentTween
     
-    toggle.MouseButton1Click:Connect(function()
+    connections.add(toggle.MouseButton1Click:Connect(function()
         enabled = not enabled
         
-        if currentTween then currentTween:Cancel() end
-        currentTween = CreateTween(toggle, {
-            BackgroundColor3 = enabled and System.Colors.Enabled or System.Colors.Disabled,
-            Size = UDim2.new(0, 24, 0, 24)
+        local tween = CreateTween(toggle, {
+            BackgroundColor3 = enabled and System.Colors.Enabled or System.Colors.Disabled
         })
-        currentTween:Play()
+        table.insert(tweens, tween)
+        tween:Play()
         
-        -- Reset size after animation
-        task.delay(0.1, function()
-            if currentTween then currentTween:Cancel() end
-            CreateTween(toggle, {Size = System.UI.ToggleSize}):Play()
-        end)
-        
-        callback(enabled)
-    end)
-    
-    -- Cleanup method
-    function container:Destroy()
-        if currentTween then currentTween:Cancel() end
-        container:Destroy()
-    end
-    
-    return container
-end
+        SafeCallback(callback, enabled)
+    end))
+end)
 
---[[ Slider Component
-    Example usage:
-    local slider = Components.createSlider(parent, "Volume", 0, 100, 50, function(value)
-        print("Slider value:", value)
-    end)
-]]
+-- Slider Component
 function Components.createSlider(parent, text, min, max, default, callback)
     local System = getgenv().CensuraSystem
     
-    -- Create container
+    -- Create main container
     local container = Create("Frame", {
         Name = "SliderContainer",
         Parent = parent,
@@ -215,12 +228,13 @@ function Components.createSlider(parent, text, min, max, default, callback)
         BackgroundTransparency = System.UI.Transparency.Elements
     })
     
+    -- Add corner to container
     Create("UICorner", {
         Parent = container,
         CornerRadius = System.UI.CornerRadius
     })
     
-    -- Create labels
+    -- Create title label
     local label = Create("TextLabel", {
         Name = "Label",
         Parent = container,
@@ -234,6 +248,7 @@ function Components.createSlider(parent, text, min, max, default, callback)
         TextSize = 14
     })
     
+    -- Create value display label
     local valueLabel = Create("TextLabel", {
         Name = "Value",
         Parent = container,
@@ -247,7 +262,7 @@ function Components.createSlider(parent, text, min, max, default, callback)
         TextSize = 14
     })
     
-    -- Create slider bar
+    -- Create slider track
     local sliderBar = Create("Frame", {
         Name = "SliderBar",
         Parent = container,
@@ -256,12 +271,13 @@ function Components.createSlider(parent, text, min, max, default, callback)
         BackgroundColor3 = System.Colors.Background
     })
     
+    -- Add corner to track
     Create("UICorner", {
         Parent = sliderBar,
         CornerRadius = UDim.new(0, 2)
     })
     
-    -- Create fill
+    -- Create fill bar
     local fill = Create("Frame", {
         Name = "Fill",
         Parent = sliderBar,
@@ -269,12 +285,13 @@ function Components.createSlider(parent, text, min, max, default, callback)
         BackgroundColor3 = System.Colors.Enabled
     })
     
+    -- Add corner to fill
     Create("UICorner", {
         Parent = fill,
         CornerRadius = UDim.new(0, 2)
     })
     
-    -- Create knob
+    -- Create drag knob
     local knob = Create("TextButton", {
         Name = "Knob",
         Parent = sliderBar,
@@ -284,70 +301,87 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Text = ""
     })
     
+    -- Add corner to knob
     Create("UICorner", {
         Parent = knob,
         CornerRadius = UDim.new(1, 0)
     })
     
-    -- Slider functionality
+    -- Slider state variables
     local dragging = false
     local value = default
-    local dragConnection
+    local connections = {}
     local currentTween
     
+    -- Update slider function
     local function updateSlider(input)
+        -- Calculate position
         local pos = math.clamp(
             (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X,
             0, 1
         )
         
+        -- Calculate value
         value = math.floor(min + ((max - min) * pos))
         valueLabel.Text = tostring(value)
         
-        if currentTween then currentTween:Cancel() end
+        -- Cancel existing tween
+        if currentTween then 
+            currentTween:Cancel()
+        end
         
-        -- Smooth movement
-        CreateTween(knob, {
+        -- Animate knob
+        currentTween = CreateTween(knob, {
             Position = UDim2.new(pos, -8, 0.5, -8)
-        }):Play()
+        })
+        currentTween:Play()
         
+        -- Animate fill
         CreateTween(fill, {
             Size = UDim2.new(pos, 0, 1, 0)
         }):Play()
         
+        -- Fire callback
         callback(value)
     end
     
-    knob.MouseButton1Down:Connect(function()
+    -- Knob drag start
+    table.insert(connections, knob.MouseButton1Down:Connect(function()
         dragging = true
-        
-        if dragConnection then
-            dragConnection:Disconnect()
-        end
-        
-        dragConnection = RunService.RenderStepped:Connect(function()
-            if dragging then
-                updateSlider({Position = UserInputService:GetMouseLocation()})
-            end
-        end)
-    end)
+    end))
     
-    UserInputService.InputEnded:Connect(function(input)
+    -- Knob drag
+    table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
+        end
+    end))
+    
+    -- Knob drag end
+    table.insert(connections, UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            if dragConnection then
-                dragConnection:Disconnect()
-                dragConnection = nil
-            end
+        end
+    end))
+    
+    -- Track click
+    table.insert(connections, sliderBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            updateSlider(input)
+        end
+    end))
+    
+    -- Cleanup
+    container.Destroying:Connect(function()
+        -- Disconnect all connections
+        for _, connection in ipairs(connections) do
+            connection:Disconnect()
+        end
+        -- Cancel current tween
+        if currentTween then
+            currentTween:Cancel()
         end
     end)
-    
-    -- Cleanup method
-    function container:Destroy()
-        if dragConnection then dragConnection:Disconnect() end
-        if currentTween then currentTween:Cancel() end
-        container:Destroy()
-    end
     
     return container
 end
