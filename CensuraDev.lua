@@ -1,21 +1,25 @@
 --[[
     CensuraDev UI Library
-    Version: 4.0
+    Version: 4.1
     Author: LxckStxp
     
-    A lightweight, efficient UI library for Roblox exploits
+    A modern, lightweight UI library for Roblox
+    with optimized performance and enhanced features
 ]]
 
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
--- Initialize Services
+-- Services
 local Services = {
     CoreGui = game:GetService("CoreGui"),
     UserInputService = game:GetService("UserInputService"),
     TweenService = game:GetService("TweenService"),
     RunService = game:GetService("RunService")
 }
+
+-- Constants
+local TWEEN_INFO = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 -- Global Configuration
 getgenv().CensuraSystem = {
@@ -46,8 +50,12 @@ getgenv().CensuraSystem = {
             Elements = 0.04
         }
     },
-    Keybind = Enum.KeyCode.RightAlt,
-    Version = "4.0"
+    Settings = {
+        DefaultTitle = "Censura",
+        ToggleKey = Enum.KeyCode.RightAlt,
+        DragSpeed = 0.05,
+        Version = "4.1"
+    }
 }
 
 -- Load External Modules
@@ -63,23 +71,32 @@ local function Create(className, properties)
     return instance
 end
 
--- Main Library Constructor
-function CensuraDev.new(title)
+local function CreateTween(instance, properties)
+    return Services.TweenService:Create(instance, TWEEN_INFO, properties)
+end
+
+-- Main Constructor
+function CensuraDev.new(title, options)
     local self = setmetatable({}, CensuraDev)
     
     -- Initialize State
     self.Elements = {}
+    self.Connections = {}
     self.Visible = true
-    self.Dragging = false
-    self.Title = title or "Censura"
+    self.Title = title or CensuraSystem.Settings.DefaultTitle
+    self.Options = options or {}
     
-    -- Create Base GUI
-    self:CreateBaseGUI()
-    
-    -- Setup Window Functionality
-    self:SetupWindowBehavior()
+    -- Create UI
+    self:Initialize()
     
     return self
+end
+
+-- Initialization
+function CensuraDev:Initialize()
+    self:CreateBaseGUI()
+    self:SetupWindowBehavior()
+    self:ApplyCustomOptions()
 end
 
 -- GUI Creation
@@ -102,10 +119,13 @@ function CensuraDev:CreateBaseGUI()
         Parent = self.GUI
     })
     
-    -- Apply Window Styling
-    Functions.setupWindow(self.MainFrame)
+    Functions.setupWindow(self.MainFrame, {
+        gradient = true,
+        stroke = true,
+        shadow = self.Options.shadow ~= false
+    })
     
-    -- Title Bar
+    -- Title Bar with Close Button
     self.TitleBar = Create("Frame", {
         Name = "TitleBar",
         Size = CensuraSystem.UI.TitleBarSize,
@@ -122,9 +142,11 @@ function CensuraDev:CreateBaseGUI()
     -- Title Text
     self.TitleText = Create("TextLabel", {
         Text = self.Title,
-        Size = UDim2.new(1, 0, 1, 0),
+        Size = UDim2.new(1, -40, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
         BackgroundTransparency = 1,
         TextColor3 = CensuraSystem.Colors.Text,
+        TextXAlignment = Enum.TextXAlignment.Left,
         Font = Enum.Font.GothamBold,
         TextSize = 18,
         Parent = self.TitleBar
@@ -143,6 +165,7 @@ function CensuraDev:CreateBaseGUI()
         Parent = self.MainFrame
     })
     
+    -- Layout and Padding
     Create("UIListLayout", {
         Parent = self.ContentFrame,
         Padding = CensuraSystem.UI.ElementSpacing,
@@ -162,12 +185,17 @@ end
 -- Window Behavior Setup
 function CensuraDev:SetupWindowBehavior()
     -- Dragging
-    Functions.setupDragging(self.TitleBar, self.MainFrame)
+    local dragHandler = Functions.setupDragging(self.TitleBar, self.MainFrame, {
+        smoothing = CensuraSystem.Settings.DragSpeed,
+        bounds = true
+    })
+    table.insert(self.Connections, dragHandler)
     
     -- Keybind
-    Functions.setupKeybind(function()
+    local keybindHandler = Functions.setupKeybind(function()
         self:Toggle()
-    end)
+    end, self.Options.toggleKey or CensuraSystem.Settings.ToggleKey)
+    table.insert(self.Connections, keybindHandler)
     
     -- Auto-cleanup
     self.GUI.Parent.ChildRemoved:Connect(function(child)
@@ -175,6 +203,17 @@ function CensuraDev:SetupWindowBehavior()
             self:Cleanup()
         end
     end)
+end
+
+-- Custom Options
+function CensuraDev:ApplyCustomOptions()
+    if self.Options.position then
+        Functions.setWindowPosition(self.MainFrame, self.Options.position)
+    end
+    
+    if self.Options.scale then
+        Functions.scaleUI(self.MainFrame, self.Options.scale, {smooth = true})
+    end
 end
 
 -- Element Creation Methods
@@ -203,7 +242,7 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     assert(type(callback) == "function", "Slider callback must be a function")
     
     local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
-    table.insert(self.Elements, {Type = "Slider", Instance = slider})
+    table.insert(self.Elements, {Type = "Slider", Instance = toggle})
     return slider
 end
 
@@ -232,6 +271,14 @@ end
 
 -- Cleanup Method
 function CensuraDev:Cleanup()
+    -- Cleanup connections
+    for _, connection in ipairs(self.Connections) do
+        if typeof(connection) == "table" and connection.Disconnect then
+            connection:Disconnect()
+        end
+    end
+    
+    -- Cleanup elements
     for _, element in ipairs(self.Elements) do
         if element.Instance then
             element.Instance:Destroy()
@@ -239,6 +286,7 @@ function CensuraDev:Cleanup()
     end
     
     self.Elements = {}
+    self.Connections = {}
     self.GUI:Destroy()
 end
 
