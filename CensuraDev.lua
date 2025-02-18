@@ -104,7 +104,6 @@ end
 function CensuraDev:Initialize()
     self:CreateBaseGUI()
     self:SetupWindowBehavior()
-    self:ApplyCustomOptions()
 end
 
 function CensuraDev:CreateBaseGUI()
