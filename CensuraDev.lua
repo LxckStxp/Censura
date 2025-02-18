@@ -184,33 +184,74 @@ function CensuraDev:CreateBaseGUI()
 end
 
 function CensuraDev:SetupWindowBehavior()
-    local dragHandler = Functions.setupDragging(self.TitleBar, self.MainFrame, {
-        smoothing = CensuraSystem.Animation.DragSmoothing,
-        bounds = true
-    })
-    table.insert(self.Connections, dragHandler)
+    -- Dragging
+    local dragStart
+    local startPos
+    local dragging = false
     
+    -- Store the connections for cleanup
+    local dragConnections = {}
+    
+    -- Mouse button down
+    table.insert(dragConnections, self.TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = self.MainFrame.Position
+        end
+    end))
+    
+    -- Mouse button up
+    table.insert(dragConnections, self.TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end))
+    
+    -- Mouse move
+    table.insert(dragConnections, Services.UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            if dragStart and startPos then
+                local delta = input.Position - dragStart
+                local targetPos = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+                
+                -- Apply the position directly
+                self.MainFrame.Position = targetPos
+            end
+        end
+    end))
+    
+    -- Add the drag connections to the main connections table
+    table.insert(self.Connections, {
+        Disconnect = function()
+            for _, conn in ipairs(dragConnections) do
+                conn:Disconnect()
+            end
+        end
+    })
+    
+    -- Keybind
     local keybindHandler = Functions.setupKeybind(function()
         self:Toggle()
     end, self.Options.toggleKey or CensuraSystem.Settings.ToggleKey)
     table.insert(self.Connections, keybindHandler)
     
+    -- Auto-cleanup
     local cleanupConnection = self.GUI.Parent.ChildRemoved:Connect(function(child)
         if child == self.GUI then
             self:Cleanup()
         end
     end)
-    table.insert(self.Connections, {Disconnect = function() cleanupConnection:Disconnect() end})
-end
-
-function CensuraDev:ApplyCustomOptions()
-    if self.Options.position then
-        Functions.setWindowPosition(self.MainFrame, self.Options.position)
-    end
-    
-    if self.Options.scale then
-        Functions.scaleUI(self.MainFrame, self.Options.scale, {smooth = true})
-    end
+    table.insert(self.Connections, {
+        Disconnect = function()
+            cleanupConnection:Disconnect()
+        end
+    })
 end
 
 function CensuraDev:CreateButton(text, callback)
