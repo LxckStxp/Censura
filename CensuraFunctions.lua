@@ -89,11 +89,12 @@ function Functions.setupDragging(titleBar, mainFrame, options)
             local viewportSize = workspace.CurrentCamera.ViewportSize
             local frameSize = mainFrame.AbsoluteSize
             
+            -- Fixed bounds calculation
             targetPos = UDim2.new(
                 targetPos.X.Scale,
-                math.clamp(targetPos.X.Offset, 0, viewportSize.X - frameSize.X),
+                math.clamp(targetPos.X.Offset, -frameSize.X * 0.5, viewportSize.X - frameSize.X * 0.5),
                 targetPos.Y.Scale,
-                math.clamp(targetPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
+                math.clamp(targetPos.Y.Offset, -frameSize.Y * 0.5, viewportSize.Y - frameSize.Y * 0.5)
             )
         end
     end
@@ -126,19 +127,29 @@ function Functions.setupDragging(titleBar, mainFrame, options)
     renderSteppedConnection = Services.RunService.RenderStepped:Connect(function()
         if dragging and dragInput then
             updateDrag(dragInput)
+            
+            -- Smooth movement
             mainFrame.Position = UDim2.new(
                 targetPos.X.Scale,
-                math.lerp(mainFrame.Position.X.Offset, targetPos.X.Offset, smoothing),
+                lerp(mainFrame.Position.X.Offset, targetPos.X.Offset, smoothing),
                 targetPos.Y.Scale,
-                math.lerp(mainFrame.Position.Y.Offset, targetPos.Y.Offset, smoothing)
+                lerp(mainFrame.Position.Y.Offset, targetPos.Y.Offset, smoothing)
             )
         end
     end)
+    
+    -- Add lerp function locally
+    local function lerp(a, b, t)
+        return a + (b - a) * t
+    end
     
     return {
         Disconnect = function()
             if inputChangedConnection then inputChangedConnection:Disconnect() end
             if renderSteppedConnection then renderSteppedConnection:Disconnect() end
+        end,
+        SetBounds = function(enabled)
+            bounds = enabled
         end
     }
 end
