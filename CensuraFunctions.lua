@@ -7,57 +7,6 @@ local Services = {
     UserInputService = game:GetService("UserInputService")
 }
 
--- Visibility Functions
-function Functions.handleVisibility(gui, mainFrame, showing)
-    local System = getgenv().CensuraSystem
-    
-    if showing then
-        gui.Parent = Services.CoreGui
-        mainFrame.Visible = true
-        
-        -- Fade in animation
-        Services.TweenService:Create(
-            mainFrame,
-            System.UI.TweenInfo,
-            {BackgroundTransparency = System.UI.Transparency.Background}
-        ):Play()
-        
-        -- Fade in elements
-        for _, element in ipairs(mainFrame:GetDescendants()) do
-            if element:IsA("Frame") and element.BackgroundTransparency < 1 then
-                Services.TweenService:Create(
-                    element,
-                    System.UI.TweenInfo,
-                    {BackgroundTransparency = System.UI.Transparency.Elements}
-                ):Play()
-            end
-        end
-    else
-        -- Fade out animation
-        Services.TweenService:Create(
-            mainFrame,
-            System.UI.TweenInfo,
-            {BackgroundTransparency = 1}
-        ):Play()
-        
-        -- Fade out elements
-        for _, element in ipairs(mainFrame:GetDescendants()) do
-            if element:IsA("Frame") and element.BackgroundTransparency < 1 then
-                Services.TweenService:Create(
-                    element,
-                    System.UI.TweenInfo,
-                    {BackgroundTransparency = 1}
-                ):Play()
-            end
-        end
-        
-        task.wait(System.UI.TweenInfo.Time)
-        mainFrame.Visible = false
-    end
-    
-    return showing
-end
-
 -- Keybind Handler
 function Functions.setupKeybind(callback)
     Services.UserInputService.InputBegan:Connect(function(input, processed)
