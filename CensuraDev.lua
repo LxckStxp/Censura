@@ -1,6 +1,6 @@
 --[[
     CensuraDev UI Library
-    Version: 4.2
+    Version: 4.3
     Author: LxckStxp
     
     A modern, lightweight UI library for Roblox
@@ -14,16 +14,21 @@ local logger = Oratio.Logger.new({
     minLevel = 1
 })
 
+-- Core Setup
 local CensuraDev = {}
 CensuraDev.__index = CensuraDev
 
 -- Services
 local Services = {
     CoreGui = game:GetService("CoreGui"),
-    UserInputService = game:GetService("UserInputService"),
-    TweenService = game:GetService("TweenService"),
-    RunService = game:GetService("RunService")
+    UserInput = game:GetService("UserInputService"),
+    Tween = game:GetService("TweenService"),
+    Run = game:GetService("RunService")
 }
+
+-- Load External Modules
+local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
+local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
 
 -- Global Configuration
 getgenv().CensuraSystem = {
@@ -54,20 +59,12 @@ getgenv().CensuraSystem = {
             Elements = 0.04
         }
     },
-    Animation = {
-        TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        DragSmoothing = 0.05
-    },
     Settings = {
         DefaultTitle = "Censura",
         ToggleKey = Enum.KeyCode.RightAlt,
-        Version = "4.2"
+        Version = "4.3"
     }
 }
-
--- Load External Modules
-local Components = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua"))()
-local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua"))()
 
 -- Utility Functions
 local function Create(className, properties)
@@ -78,6 +75,33 @@ local function Create(className, properties)
     return instance
 end
 
+-- Element Queue System
+local ElementQueue = {
+    items = {},
+    processing = false,
+    
+    add = function(self, element)
+        table.insert(self.items, element)
+        if not self.processing then
+            self:process()
+        end
+    end,
+    
+    process = function(self)
+        self.processing = true
+        task.spawn(function()
+            while #self.items > 0 do
+                local element = table.remove(self.items, 1)
+                if element.create then
+                    element:create()
+                end
+                task.wait(0.03)
+            end
+            self.processing = false
+        end)
+    end
+}
+
 -- Main Constructor
 function CensuraDev.new(title, options)
     local self = setmetatable({}, CensuraDev)
@@ -87,6 +111,7 @@ function CensuraDev.new(title, options)
     self.Visible = true
     self.Title = title or CensuraSystem.Settings.DefaultTitle
     self.Options = options or {}
+    self.Queue = setmetatable({}, {__index = ElementQueue})
     
     local success, err = pcall(function()
         self:Initialize()
@@ -107,6 +132,7 @@ function CensuraDev:Initialize()
 end
 
 function CensuraDev:CreateBaseGUI()
+    -- Create ScreenGui
     self.GUI = Create("ScreenGui", {
         Name = "CensuraUI",
         ResetOnSpawn = false,
@@ -114,6 +140,7 @@ function CensuraDev:CreateBaseGUI()
         Parent = Services.CoreGui
     })
     
+    -- Create Main Frame
     self.MainFrame = Create("Frame", {
         Name = "MainFrame",
         Size = CensuraSystem.UI.WindowSize,
@@ -123,12 +150,14 @@ function CensuraDev:CreateBaseGUI()
         Parent = self.GUI
     })
     
+    -- Setup window decorations
     Functions.setupWindow(self.MainFrame, {
         gradient = true,
         stroke = true,
         shadow = self.Options.shadow ~= false
     })
     
+    -- Create Title Bar
     self.TitleBar = Create("Frame", {
         Name = "TitleBar",
         Size = CensuraSystem.UI.TitleBarSize,
@@ -142,6 +171,7 @@ function CensuraDev:CreateBaseGUI()
         CornerRadius = CensuraSystem.UI.CornerRadius
     })
     
+    -- Create Title Text
     self.TitleText = Create("TextLabel", {
         Text = self.Title,
         Size = UDim2.new(1, -40, 1, 0),
@@ -154,6 +184,7 @@ function CensuraDev:CreateBaseGUI()
         Parent = self.TitleBar
     })
     
+    -- Create Content Frame
     self.ContentFrame = Create("ScrollingFrame", {
         Name = "ContentFrame",
         Position = CensuraSystem.UI.ContentPadding,
@@ -166,6 +197,7 @@ function CensuraDev:CreateBaseGUI()
         Parent = self.MainFrame
     })
     
+    -- Add Layout
     Create("UIListLayout", {
         Parent = self.ContentFrame,
         Padding = CensuraSystem.UI.ElementSpacing,
@@ -173,6 +205,7 @@ function CensuraDev:CreateBaseGUI()
         HorizontalAlignment = Enum.HorizontalAlignment.Center
     })
     
+    -- Add Padding
     Create("UIPadding", {
         Parent = self.ContentFrame,
         PaddingLeft = UDim.new(0, 8),
@@ -183,109 +216,76 @@ function CensuraDev:CreateBaseGUI()
 end
 
 function CensuraDev:SetupWindowBehavior()
-    -- Dragging
-    local dragStart
-    local startPos
-    local dragging = false
-    
-    -- Store the connections for cleanup
-    local dragConnections = {}
-    
-    -- Mouse button down
-    table.insert(dragConnections, self.TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = self.MainFrame.Position
-        end
-    end))
-    
-    -- Mouse button up
-    table.insert(dragConnections, self.TitleBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end))
-    
-    -- Mouse move
-    table.insert(dragConnections, Services.UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-            if dragStart and startPos then
-                local delta = input.Position - dragStart
-                local targetPos = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y
-                )
-                
-                -- Apply the position directly
-                self.MainFrame.Position = targetPos
-            end
-        end
-    end))
-    
-    -- Add the drag connections to the main connections table
-    table.insert(self.Connections, {
-        Disconnect = function()
-            for _, conn in ipairs(dragConnections) do
-                conn:Disconnect()
-            end
-        end
+    -- Dragging with bounds checking
+    local dragHandler = Functions.setupDragging(self.TitleBar, self.MainFrame, {
+        smoothing = 0.05,
+        bounds = true
     })
+    table.insert(self.Connections, dragHandler)
     
-    -- Keybind
+    -- Toggle visibility keybind
     local keybindHandler = Functions.setupKeybind(function()
         self:Toggle()
     end, self.Options.toggleKey or CensuraSystem.Settings.ToggleKey)
     table.insert(self.Connections, keybindHandler)
     
-    -- Auto-cleanup
-    local cleanupConnection = self.GUI.Parent.ChildRemoved:Connect(function(child)
-        if child == self.GUI then
-            self:Cleanup()
-        end
-    end)
-    table.insert(self.Connections, {
-        Disconnect = function()
-            cleanupConnection:Disconnect()
-        end
-    })
+    -- Position handler
+    if self.Options.position then
+        Functions.setWindowPosition(self.MainFrame, self.Options.position)
+    end
+    
+    -- Scale handler
+    if self.Options.scale then
+        Functions.scaleUI(self.MainFrame, self.Options.scale, {smooth = true})
+    end
 end
 
+-- Element Creation Methods
 function CensuraDev:CreateButton(text, callback)
     assert(type(text) == "string", "Button text must be a string")
     assert(type(callback) == "function", "Button callback must be a function")
     
-    local button = Components.createButton(self.ContentFrame, text, callback)
-    if button then
-        table.insert(self.Elements, {
-            Type = "Button",
-            Instance = button,
-            Text = text
-        })
-        logger:Debug(string.format("Created button: %s", text))
-    end
-    return button
+    -- Create button through queue system
+    self.Queue:add({
+        create = function()
+            local button = Components.createButton(self.ContentFrame, text, callback)
+            if button then
+                table.insert(self.Elements, {
+                    Type = "Button",
+                    Instance = button,
+                    Text = text
+                })
+                logger:Debug(string.format("Created button: %s", text))
+            end
+            return button
+        end
+    })
+    
+    return true
 end
 
 function CensuraDev:CreateToggle(text, default, callback)
     assert(type(text) == "string", "Toggle text must be a string")
     assert(type(callback) == "function", "Toggle callback must be a function")
     
-    task.spawn(function()
-        local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
-        if toggle then
-            table.insert(self.Elements, {
-                Type = "Toggle",
-                Instance = toggle,
-                Text = text,
-                State = default
-            })
-            logger:Debug(string.format("Created toggle: %s", text))
+    -- Create toggle through queue system
+    self.Queue:add({
+        create = function()
+            local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
+            if toggle then
+                table.insert(self.Elements, {
+                    Type = "Toggle",
+                    Instance = toggle,
+                    Text = text,
+                    State = default
+                })
+                logger:Debug(string.format("Created toggle: %s", text))
+            end
+            return toggle
         end
-    end)
-    return toggle
+    })
+    
+    return true
 end
 
 function CensuraDev:CreateSlider(text, min, max, default, callback)
@@ -294,21 +294,34 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     assert(type(max) == "number", "Maximum value must be a number")
     assert(type(callback) == "function", "Slider callback must be a function")
     
-    task.spawn(function()
-        local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
-        if slider then
-            table.insert(self.Elements, {
-                Type = "Slider",
-                Instance = slider,
-                Text = text,
-                Value = default
-            })
-            logger:Debug(string.format("Created slider: %s", text))
+    -- Create slider through queue system
+    self.Queue:add({
+        create = function()
+            local slider = Components.createSlider(
+                self.ContentFrame,
+                text,
+                min,
+                max,
+                default,
+                callback
+            )
+            if slider then
+                table.insert(self.Elements, {
+                    Type = "Slider",
+                    Instance = slider,
+                    Text = text,
+                    Value = default
+                })
+                logger:Debug(string.format("Created slider: %s", text))
+            end
+            return slider
         end
-    end)
-    return slider
+    })
+    
+    return true
 end
 
+-- Visibility Methods
 function CensuraDev:Show()
     if not self.Visible then
         self.Visible = true
@@ -333,26 +346,47 @@ function CensuraDev:Toggle()
     end
 end
 
+-- Enhanced Cleanup Method
 function CensuraDev:Cleanup()
-    logger:Info("Cleaning up UI...")
+    logger:Info("Starting UI cleanup...")
     
+    -- Clear element queue
+    self.Queue.items = {}
+    self.Queue.processing = false
+    
+    -- Cleanup connections
     for _, connection in ipairs(self.Connections) do
-        if typeof(connection) == "table" and connection.Disconnect then
-            connection:Disconnect()
-        end
+        pcall(function()
+            if typeof(connection) == "table" and connection.Disconnect then
+                connection:Disconnect()
+            end
+        end)
     end
     
+    -- Cleanup elements
     for _, element in ipairs(self.Elements) do
-        if element.Instance then
-            element.Instance:Destroy()
-        end
+        pcall(function()
+            if element.Instance then
+                if element.Instance.Parent then
+                    element.Instance.Parent = nil
+                end
+                element.Instance:Destroy()
+            end
+        end)
     end
     
+    -- Clear tables
     self.Elements = {}
     self.Connections = {}
-    self.GUI:Destroy()
     
-    logger:Info("UI cleanup complete")
+    -- Remove GUI
+    pcall(function()
+        if self.GUI and self.GUI.Parent then
+            self.GUI:Destroy()
+        end
+    end)
+    
+    logger:Info("UI cleanup completed successfully")
 end
 
 return CensuraDev
