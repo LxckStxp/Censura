@@ -259,8 +259,14 @@ function CensuraDev:CreateButton(text, callback)
     assert(type(callback) == "function", "Button callback must be a function")
     
     local button = Components.createButton(self.ContentFrame, text, callback)
-    table.insert(self.Elements, {Type = "Button", Instance = button})
-    logger:Debug(string.format("Created button: %s", text))
+    if button then
+        table.insert(self.Elements, {
+            Type = "Button",
+            Instance = button,
+            Text = text
+        })
+        logger:Debug(string.format("Created button: %s", text))
+    end
     return button
 end
 
@@ -268,9 +274,18 @@ function CensuraDev:CreateToggle(text, default, callback)
     assert(type(text) == "string", "Toggle text must be a string")
     assert(type(callback) == "function", "Toggle callback must be a function")
     
-    local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
-    table.insert(self.Elements, {Type = "Toggle", Instance = toggle})
-    logger:Debug(string.format("Created toggle: %s", text))
+    task.spawn(function()
+        local toggle = Components.createToggle(self.ContentFrame, text, default, callback)
+        if toggle then
+            table.insert(self.Elements, {
+                Type = "Toggle",
+                Instance = toggle,
+                Text = text,
+                State = default
+            })
+            logger:Debug(string.format("Created toggle: %s", text))
+        end
+    end)
     return toggle
 end
 
@@ -280,9 +295,18 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     assert(type(max) == "number", "Maximum value must be a number")
     assert(type(callback) == "function", "Slider callback must be a function")
     
-    local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
-    table.insert(self.Elements, {Type = "Slider", Instance = slider})
-    logger:Debug(string.format("Created slider: %s", text))
+    task.spawn(function()
+        local slider = Components.createSlider(self.ContentFrame, text, min, max, default, callback)
+        if slider then
+            table.insert(self.Elements, {
+                Type = "Slider",
+                Instance = slider,
+                Text = text,
+                Value = default
+            })
+            logger:Debug(string.format("Created slider: %s", text))
+        end
+    end)
     return slider
 end
 
