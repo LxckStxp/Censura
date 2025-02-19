@@ -1,8 +1,8 @@
 --[[
     CensuraDev Components Module
-    Version: 4.0
+    Version: 4.1
     
-    UI Components with consistent styling and behavior
+    Modern military-tech inspired UI components
 ]]
 
 local Components = {}
@@ -14,7 +14,6 @@ local Services = {
     Run = game:GetService("RunService")
 }
 
--- Utility function for creating instances
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -31,25 +30,25 @@ function Components.createButton(parent, text, callback)
     local button = Create("TextButton", {
         Name = "Button",
         Size = System.UI.ButtonSize,
-        BackgroundColor3 = System.Colors.Accent,
-        BackgroundTransparency = System.UI.Transparency.Elements,
+        BackgroundColor3 = System.Colors.Background,
+        BackgroundTransparency = 0.9, -- More transparent background
         Text = text,
         TextColor3 = System.Colors.Text,
-        Font = Enum.Font.GothamSemibold,
+        Font = Enum.Font.Gotham,
         TextSize = 14,
         AutoButtonColor = false,
         Parent = parent
     })
     
-    -- Apply corner
+    -- Minimal corner radius
     Create("UICorner", {
-        CornerRadius = System.UI.CornerRadius,
+        CornerRadius = UDim.new(0, 2),
         Parent = button
     })
     
-    -- Apply stroke
-    Create("UIStroke", {
-        Color = System.Colors.Highlight,
+    -- Sleek border
+    local stroke = Create("UIStroke", {
+        Color = System.Colors.Accent,
         Transparency = 0.8,
         Thickness = 1,
         Parent = button
@@ -57,19 +56,34 @@ function Components.createButton(parent, text, callback)
     
     -- Hover Effects
     button.MouseEnter:Connect(function()
+        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+            Transparency = 0.2
+        }):Play()
         Services.Tween:Create(button, System.Animation.TweenInfo, {
-            BackgroundColor3 = System.Colors.Highlight
+            BackgroundTransparency = 0.7
         }):Play()
     end)
     
     button.MouseLeave:Connect(function()
+        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+            Transparency = 0.8
+        }):Play()
         Services.Tween:Create(button, System.Animation.TweenInfo, {
-            BackgroundColor3 = System.Colors.Accent
+            BackgroundTransparency = 0.9
         }):Play()
     end)
     
-    -- Click handling
-    button.MouseButton1Click:Connect(function()
+    -- Click Effect
+    button.MouseButton1Down:Connect(function()
+        Services.Tween:Create(button, TweenInfo.new(0.1), {
+            BackgroundTransparency = 0.5
+        }):Play()
+    end)
+    
+    button.MouseButton1Up:Connect(function()
+        Services.Tween:Create(button, TweenInfo.new(0.1), {
+            BackgroundTransparency = 0.7
+        }):Play()
         if typeof(callback) == "function" then
             callback()
         end
@@ -83,28 +97,26 @@ function Components.createToggle(parent, text, default, callback)
     local System = getgenv().CensuraSystem
     if not System then return end
     
-    -- Create container
     local container = Create("Frame", {
         Name = "ToggleContainer",
         Size = System.UI.ButtonSize,
-        BackgroundColor3 = System.Colors.Accent,
-        BackgroundTransparency = System.UI.Transparency.Elements,
+        BackgroundColor3 = System.Colors.Background,
+        BackgroundTransparency = 0.9,
         Parent = parent
     })
     
     Create("UICorner", {
-        CornerRadius = System.UI.CornerRadius,
+        CornerRadius = UDim.new(0, 2),
         Parent = container
     })
     
-    Create("UIStroke", {
-        Color = System.Colors.Highlight,
+    local stroke = Create("UIStroke", {
+        Color = System.Colors.Accent,
         Transparency = 0.8,
         Thickness = 1,
         Parent = container
     })
     
-    -- Create label
     local label = Create("TextLabel", {
         Name = "Label",
         Position = UDim2.new(0, 10, 0, 0),
@@ -113,38 +125,60 @@ function Components.createToggle(parent, text, default, callback)
         Text = text,
         TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.GothamSemibold,
+        Font = Enum.Font.Gotham,
         TextSize = 14,
         Parent = container
     })
     
-    -- Create toggle button
-    local toggle = Create("TextButton", {
-        Name = "Toggle",
-        Position = UDim2.new(1, -34, 0.5, -12),
-        Size = System.UI.ToggleSize,
-        BackgroundColor3 = default and System.Colors.Enabled or System.Colors.Disabled,
-        Text = "",
+    -- Modern toggle design
+    local toggleFrame = Create("Frame", {
+        Name = "ToggleFrame",
+        Position = UDim2.new(1, -34, 0.5, -8),
+        Size = UDim2.new(0, 24, 0, 16),
+        BackgroundColor3 = default and System.Colors.Enabled or System.Colors.Background,
+        BackgroundTransparency = 0.5,
         Parent = container
     })
     
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 12),
-        Parent = toggle
+        CornerRadius = UDim.new(1, 0),
+        Parent = toggleFrame
     })
     
-    -- Toggle state and animation
+    local toggleKnob = Create("Frame", {
+        Name = "Knob",
+        Position = default and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6),
+        Size = UDim2.new(0, 12, 0, 12),
+        BackgroundColor3 = System.Colors.Text,
+        Parent = toggleFrame
+    })
+    
+    Create("UICorner", {
+        CornerRadius = UDim.new(1, 0),
+        Parent = toggleKnob
+    })
+    
     local enabled = default or false
     
-    toggle.MouseButton1Click:Connect(function()
-        enabled = not enabled
-        
-        Services.Tween:Create(toggle, System.Animation.TweenInfo, {
-            BackgroundColor3 = enabled and System.Colors.Enabled or System.Colors.Disabled
-        }):Play()
-        
-        if typeof(callback) == "function" then
-            callback(enabled)
+    toggleFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            enabled = not enabled
+            
+            -- Animate toggle
+            local targetPos = enabled and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+            local targetColor = enabled and System.Colors.Enabled or System.Colors.Background
+            
+            Services.Tween:Create(toggleKnob, TweenInfo.new(0.2), {
+                Position = targetPos
+            }):Play()
+            
+            Services.Tween:Create(toggleFrame, TweenInfo.new(0.2), {
+                BackgroundColor3 = targetColor
+            }):Play()
+            
+            if typeof(callback) == "function" then
+                callback(enabled)
+            end
         end
     end)
     
@@ -156,28 +190,28 @@ function Components.createSlider(parent, text, min, max, default, callback)
     local System = getgenv().CensuraSystem
     if not System then return end
     
-    -- Create container
+    -- Modern container with minimal design
     local container = Create("Frame", {
         Name = "SliderContainer",
         Size = System.UI.SliderSize,
-        BackgroundColor3 = System.Colors.Accent,
-        BackgroundTransparency = System.UI.Transparency.Elements,
+        BackgroundColor3 = System.Colors.Background,
+        BackgroundTransparency = 0.9,
         Parent = parent
     })
     
     Create("UICorner", {
-        CornerRadius = System.UI.CornerRadius,
+        CornerRadius = UDim.new(0, 2),
         Parent = container
     })
     
-    Create("UIStroke", {
-        Color = System.Colors.Highlight,
+    local stroke = Create("UIStroke", {
+        Color = System.Colors.Accent,
         Transparency = 0.8,
         Thickness = 1,
         Parent = container
     })
     
-    -- Create labels
+    -- Clean, minimal labels
     local label = Create("TextLabel", {
         Name = "Label",
         Position = UDim2.new(0, 10, 0, 0),
@@ -186,59 +220,87 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Text = text,
         TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.GothamSemibold,
+        Font = Enum.Font.Gotham,
         TextSize = 14,
         Parent = container
+    })
+    
+    -- Modern value display
+    local valueFrame = Create("Frame", {
+        Name = "ValueFrame",
+        Position = UDim2.new(1, -60, 0, 0),
+        Size = UDim2.new(0, 50, 0, 20),
+        BackgroundColor3 = System.Colors.Background,
+        BackgroundTransparency = 0.8,
+        Parent = container
+    })
+    
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, 2),
+        Parent = valueFrame
     })
     
     local valueLabel = Create("TextLabel", {
         Name = "Value",
-        Position = UDim2.new(1, -60, 0, 0),
-        Size = UDim2.new(0, 50, 0, 20),
+        Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
         Text = tostring(default),
         TextColor3 = System.Colors.Text,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        Font = Enum.Font.GothamSemibold,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        Font = Enum.Font.GothamBold,
         TextSize = 14,
-        Parent = container
+        Parent = valueFrame
     })
     
-    -- Create slider bar
-    local sliderBar = Create("Frame", {
-        Name = "SliderBar",
+    -- Sleek slider track
+    local sliderTrack = Create("Frame", {
+        Name = "SliderTrack",
         Position = UDim2.new(0, 10, 0.7, 0),
-        Size = UDim2.new(1, -20, 0, 4),
-        BackgroundColor3 = System.Colors.Background,
+        Size = UDim2.new(1, -20, 0, 2), -- Thinner track
+        BackgroundColor3 = System.Colors.Border,
+        BackgroundTransparency = 0.5,
         Parent = container
     })
     
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 2),
-        Parent = sliderBar
+        CornerRadius = UDim.new(0, 1),
+        Parent = sliderTrack
     })
     
-    -- Create fill
+    -- Progress fill with gradient
     local fill = Create("Frame", {
         Name = "Fill",
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
         BackgroundColor3 = System.Colors.Enabled,
-        Parent = sliderBar
+        Parent = sliderTrack
     })
     
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 2),
+        CornerRadius = UDim.new(0, 1),
         Parent = fill
     })
     
-    -- Create knob
-    local knob = Create("TextButton", {
+    -- Apply subtle gradient to fill
+    local fillGradient = Create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, System.Colors.Enabled),
+            ColorSequenceKeypoint.new(1, System.Colors.Highlight)
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(1, 0.2)
+        }),
+        Parent = fill
+    })
+    
+    -- Modern minimal knob
+    local knob = Create("Frame", {
         Name = "Knob",
-        Position = UDim2.new((default - min) / (max - min), -8, 0.5, -8),
-        Size = UDim2.new(0, 16, 0, 16),
-        BackgroundColor3 = System.Colors.Enabled,
-        Text = "",
-        Parent = sliderBar
+        Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6),
+        Size = UDim2.new(0, 12, 0, 12),
+        BackgroundColor3 = System.Colors.Text,
+        BackgroundTransparency = 0,
+        Parent = sliderTrack
     })
     
     Create("UICorner", {
@@ -246,41 +308,84 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = knob
     })
     
-    -- Slider functionality
+    -- Knob highlight effect
+    local knobStroke = Create("UIStroke", {
+        Color = System.Colors.Accent,
+        Transparency = 1,
+        Thickness = 1,
+        Parent = knob
+    })
+    
+    -- Slider functionality with improved visual feedback
     local dragging = false
     local value = default
     
-    knob.MouseButton1Down:Connect(function()
-        dragging = true
+    local function updateVisuals(pos)
+        value = math.floor(min + ((max - min) * pos))
+        valueLabel.Text = tostring(value)
+        
+        -- Smooth transitions
+        Services.Tween:Create(knob, TweenInfo.new(0.1), {
+            Position = UDim2.new(pos, -6, 0.5, -6)
+        }):Play()
+        
+        Services.Tween:Create(fill, TweenInfo.new(0.1), {
+            Size = UDim2.new(pos, 0, 1, 0)
+        }):Play()
+    end
+    
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            -- Show knob highlight
+            Services.Tween:Create(knobStroke, TweenInfo.new(0.2), {
+                Transparency = 0.5
+            }):Play()
+        end
     end)
     
     Services.Input.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+            -- Hide knob highlight
+            Services.Tween:Create(knobStroke, TweenInfo.new(0.2), {
+                Transparency = 1
+            }):Play()
         end
     end)
     
+    -- Smooth drag handling
     Services.Run.RenderStepped:Connect(function()
         if dragging then
             local mousePos = Services.Input:GetMouseLocation()
-            local sliderPos = sliderBar.AbsolutePosition
-            local sliderSize = sliderBar.AbsoluteSize
+            local sliderPos = sliderTrack.AbsolutePosition
+            local sliderSize = sliderTrack.AbsoluteSize
             
             local pos = math.clamp(
                 (mousePos.X - sliderPos.X) / sliderSize.X,
                 0, 1
             )
             
-            value = math.floor(min + ((max - min) * pos))
-            valueLabel.Text = tostring(value)
-            
-            -- Update visuals
-            knob.Position = UDim2.new(pos, -8, 0.5, -8)
-            fill.Size = UDim2.new(pos, 0, 1, 0)
+            updateVisuals(pos)
             
             if typeof(callback) == "function" then
                 callback(value)
             end
+        end
+    end)
+    
+    -- Hover effects
+    sliderTrack.MouseEnter:Connect(function()
+        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+            Transparency = 0.5
+        }):Play()
+    end)
+    
+    sliderTrack.MouseLeave:Connect(function()
+        if not dragging then
+            Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+                Transparency = 0.8
+            }):Play()
         end
     end)
     
