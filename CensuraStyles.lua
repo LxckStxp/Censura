@@ -12,13 +12,13 @@ function Styles.initialize()
 
     getgenv().CensuraSystem = {
         Colors = {
-            Background = Color3.fromRGB(15, 17, 19),     -- Very dark gray with slight blue
-            Accent = Color3.fromRGB(210, 215, 220),      -- Light gray for borders/accents
-            Text = Color3.fromRGB(225, 228, 230),        -- Soft white
-            Highlight = Color3.fromRGB(65, 156, 200),    -- Subtle blue highlight
-            Enabled = Color3.fromRGB(140, 195, 185),     -- Soft cyan
-            Disabled = Color3.fromRGB(180, 70, 70),      -- Muted red
-            Border = Color3.fromRGB(40, 45, 50),         -- Dark border
+            Background = Color3.fromRGB(15, 17, 19),      -- Deep dark gray
+            Accent = Color3.fromRGB(255, 30, 50),         -- Hot rod red
+            Text = Color3.fromRGB(225, 228, 230),         -- Soft white
+            Highlight = Color3.fromRGB(255, 65, 85),      -- Lighter red for highlights
+            Enabled = Color3.fromRGB(50, 200, 100),       -- Success green
+            Disabled = Color3.fromRGB(180, 70, 70),       -- Muted red
+            Border = Color3.fromRGB(40, 45, 50),          -- Dark border
             SecondaryText = Color3.fromRGB(130, 135, 140) -- Muted text
         },
         UI = {
@@ -30,7 +30,7 @@ function Styles.initialize()
             SliderSize = UDim2.new(1, -12, 0, 40),
             CornerRadius = UDim.new(0, 4),
             Padding = UDim.new(0, 6),
-            ElementSpacing = UDim.new(0, 6),
+            ElementSpacing = UDim2.new(0, 6),
             Transparency = {
                 Background = 0.15,
                 Accent = 0.1,
@@ -53,16 +53,16 @@ function Styles.setTheme(theme)
     local themes = {
         Dark = {
             Background = Color3.fromRGB(15, 17, 19),
-            Accent = Color3.fromRGB(210, 215, 220),
+            Accent = Color3.fromRGB(255, 30, 50),
             Text = Color3.fromRGB(225, 228, 230),
-            Highlight = Color3.fromRGB(65, 156, 200),
+            Highlight = Color3.fromRGB(255, 65, 85),
             Border = Color3.fromRGB(40, 45, 50)
         },
         Light = {
             Background = Color3.fromRGB(240, 242, 245),
-            Accent = Color3.fromRGB(180, 185, 190),
+            Accent = Color3.fromRGB(255, 30, 50),
             Text = Color3.fromRGB(40, 42, 45),
-            Highlight = Color3.fromRGB(65, 156, 200),
+            Highlight = Color3.fromRGB(255, 65, 85),
             Border = Color3.fromRGB(200, 205, 210)
         }
     }
