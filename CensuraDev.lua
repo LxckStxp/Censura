@@ -74,6 +74,13 @@ function CensuraDev.new(title)
         BackgroundTransparency = System.UI.Transparency.TitleBar, -- Almost fully transparent
         Parent = self.MainFrame
     })
+
+    -- Apply gradient with subtle effect
+    local titleGradient = Animations.createAnimatedGradient({
+        StartColor = System.Colors.Accent,
+        EndColor = System.Colors.Background,
+        Rotation = 90
+    })
     
     -- Adjust gradient properties for better visibility
     titleGradient.Color = ColorSequence.new({
