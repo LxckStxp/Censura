@@ -1,7 +1,7 @@
 --[[
     CensuraDev UI Library
     Version: 4.0
-    
+
     Modern, lightweight UI library for Roblox games
     with optimized performance and customizable styling
 ]]
@@ -24,7 +24,7 @@ local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/Lxc
 -- Initialize Styles
 Styles.initialize()
 
--- Utility Functions
+-- Utility function to create instances with given properties
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -37,7 +37,7 @@ end
 function CensuraDev.new(title)
     local self = setmetatable({}, CensuraDev)
     local System = getgenv().CensuraSystem
-    
+
     -- Initialize UI
     self.GUI = Create("ScreenGui", {
         Name = "CensuraUI",
@@ -67,6 +67,9 @@ function CensuraDev.new(title)
         Parent = self.MainFrame
     })
     
+    -- Apply gradient to TitleBar for a modern look
+    Styles.applyGradient(self.TitleBar, 90)
+    
     -- Title Text
     self.TitleText = Create("TextLabel", {
         Text = title or System.Settings.DefaultTitle,
@@ -80,7 +83,7 @@ function CensuraDev.new(title)
         Parent = self.TitleBar
     })
     
-    -- Apply title bar styling
+    -- Apply UICorner to TitleBar for rounded corners
     Create("UICorner", {
         CornerRadius = System.UI.CornerRadius,
         Parent = self.TitleBar
@@ -115,7 +118,7 @@ function CensuraDev.new(title)
         PaddingBottom = UDim.new(0, 8)
     })
     
-    -- Setup dragging
+    -- Setup dragging for the MainFrame via TitleBar
     Functions.makeDraggable(self.TitleBar, self.MainFrame)
     
     -- Toggle Visibility Keybind
@@ -130,6 +133,7 @@ function CensuraDev.new(title)
 end
 
 -- UI Element Creation Methods
+
 function CensuraDev:CreateButton(text, callback)
     assert(type(text) == "string", "Button text must be a string")
     assert(type(callback) == "function", "Button callback must be a function")
@@ -151,6 +155,7 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
 end
 
 -- Visibility Methods
+
 function CensuraDev:Show()
     self.Visible = true
     self.GUI.Enabled = true
@@ -173,11 +178,11 @@ function CensuraDev:Toggle()
 end
 
 -- Cleanup Method
+
 function CensuraDev:Destroy()
     if self.KeybindConnection then
         self.KeybindConnection:Disconnect()
     end
-    
     if self.GUI then
         self.GUI:Destroy()
     end
