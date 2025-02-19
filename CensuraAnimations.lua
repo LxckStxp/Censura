@@ -26,26 +26,25 @@ function Animations.createAnimatedGradient(properties)
     
     local gradient = Instance.new("UIGradient")
     
-    -- Use explicit colors with optional hold point
     local startColor = properties.StartColor or System.Colors.Accent
     local endColor = properties.EndColor or System.Colors.Background
     
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, startColor),
-        ColorSequenceKeypoint.new(0.4, startColor),      -- Hold the start color
+        ColorSequenceKeypoint.new(0.4, startColor),      
         ColorSequenceKeypoint.new(1, endColor)
     })
     
-    -- Less transparent gradient for better visibility
+    -- Adjusted transparency values for better visibility
     gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.05),    -- More visible start
-        NumberSequenceKeypoint.new(0.4, 0.1),   -- Subtle fade during hold
-        NumberSequenceKeypoint.new(1, 0.3)      -- Gradual end transition
+        NumberSequenceKeypoint.new(0, 0),      -- Fully visible start
+        NumberSequenceKeypoint.new(0.4, 0.1),  -- Slight fade during hold
+        NumberSequenceKeypoint.new(1, 0.5)     -- More visible end
     })
     
     gradient.Rotation = properties.Rotation or 90
     
-    -- Subtle animation
+    -- Slightly faster animation
     local offset = 0
     local connection
     connection = Services.Run.RenderStepped:Connect(function(deltaTime)
@@ -53,7 +52,7 @@ function Animations.createAnimatedGradient(properties)
             connection:Disconnect()
             return
         end
-        offset = (offset + deltaTime * 0.1) % 1
+        offset = (offset + deltaTime * 0.2) % 1  -- Increased speed from 0.1 to 0.2
         gradient.Offset = Vector2.new(offset, 0)
     end)
     
