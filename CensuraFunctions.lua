@@ -54,6 +54,13 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     local lastGoalPos
     local dragInertia = Vector2.new()
     
+    local function isMouseOver(element, mousePos)
+        local absPos = element.AbsolutePosition
+        local absSize = element.AbsoluteSize
+        return mousePos.X >= absPos.X and mousePos.X <= absPos.X + absSize.X and
+               mousePos.Y >= absPos.Y and mousePos.Y <= absPos.Y + absSize.Y
+    end
+
     local function updateDrag(inputPos)
         local delta = inputPos - dragStart
         local goalPos = UDim2.new(
@@ -88,12 +95,15 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     
     -- Use global input events for better dragging behavior
     Services.Input.InputBegan:Connect(function(input, processed)
-        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 and titleBar:IsMouseOver() then
-            dragging = true
-            dragStart = Services.Input:GetMouseLocation()
-            startPos = mainFrame.Position
-            lastMousePos = dragStart
-            Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
+        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = Services.Input:GetMouseLocation()
+            if isMouseOver(titleBar, mousePos) then
+                dragging = true
+                dragStart = mousePos
+                startPos = mainFrame.Position
+                lastMousePos = dragStart
+                Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
+            end
         end
     end)
     
@@ -104,7 +114,7 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     end)
     
     Services.Input.InputEnded:Connect(function(input, processed)
-        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
+        if not processed and input.UserInputType == Enum.UserInput1 and dragging then
             dragging = false
             Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
         end
