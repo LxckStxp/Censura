@@ -38,7 +38,7 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     dragOptions = dragOptions or {
         dragThreshold = 1,
         dragInertia = 0.07,
-        snapToScreen = true,
+        snapToScreen = false,
         bounds = {
             minX = 0,
             minY = 0,
