@@ -12,13 +12,14 @@ function Styles.initialize()
 
     getgenv().CensuraSystem = {
         Colors = {
-            Background = Color3.fromRGB(25, 25, 35),
-            Accent = Color3.fromRGB(80, 120, 200),
-            Text = Color3.fromRGB(240, 240, 245),
-            Highlight = Color3.fromRGB(100, 140, 220),
-            Enabled = Color3.fromRGB(80, 120, 200),
+            -- Futuristic dark background and neon accent
+            Background = Color3.fromRGB(10, 10, 20),
+            Accent = Color3.fromRGB(0, 170, 255),
+            Text = Color3.fromRGB(230, 230, 240),
+            Highlight = Color3.fromRGB(20, 200, 255),
+            Enabled = Color3.fromRGB(0, 170, 255),
             Disabled = Color3.fromRGB(255, 85, 85),
-            Border = Color3.fromRGB(50, 50, 65),
+            Border = Color3.fromRGB(30, 30, 45),
             SecondaryText = Color3.fromRGB(150, 150, 160)
         },
         UI = {
@@ -32,8 +33,8 @@ function Styles.initialize()
             Padding = UDim.new(0, 8),
             ElementSpacing = UDim.new(0, 10),
             Transparency = {
-                Background = 0.1,
-                Accent = 0.05,
+                Background = 0.05,
+                Accent = 0.03,
                 Text = 0,
                 Elements = 0.0
             }
@@ -56,11 +57,11 @@ function Styles.setTheme(theme)
 
     local themes = {
         Dark = {
-            Background = Color3.fromRGB(25, 25, 35),
-            Accent = Color3.fromRGB(80, 120, 200),
-            Text = Color3.fromRGB(240, 240, 245),
-            Highlight = Color3.fromRGB(100, 140, 220),
-            Border = Color3.fromRGB(50, 50, 65)
+            Background = Color3.fromRGB(10, 10, 20),
+            Accent = Color3.fromRGB(0, 170, 255),
+            Text = Color3.fromRGB(230, 230, 240),
+            Highlight = Color3.fromRGB(20, 200, 255),
+            Border = Color3.fromRGB(30, 30, 45)
         },
         Light = {
             Background = Color3.fromRGB(245, 245, 250),
@@ -84,9 +85,16 @@ function Styles.getDefaultGradient(rotation)
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, System.Colors.Accent),
+        ColorSequenceKeypoint.new(0.5, System.Colors.Highlight),
         ColorSequenceKeypoint.new(1, System.Colors.Background)
     })
     gradient.Rotation = rotation
+    -- Subtle animated gradient properties (futuristic feel)
+    gradient.Offset = Vector2.new(0, 0)
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 0)
+    })
     return gradient
 end
 
