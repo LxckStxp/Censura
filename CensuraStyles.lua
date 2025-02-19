@@ -28,9 +28,9 @@ function Styles.initialize()
             ButtonSize = UDim2.new(1, -12, 0, 32),
             ToggleSize = UDim2.new(0, 24, 0, 24),
             SliderSize = UDim2.new(1, -12, 0, 40),
-            CornerRadius = UDim.new(0, 4),
-            Padding = UDim.new(0, 6),
-            ElementSpacing = UDim2.new(0, 6),
+            CornerRadius = UDim.new(0, 4),               -- Corrected to UDim
+            Padding = UDim.new(0, 6),                    -- Corrected to UDim
+            ElementSpacing = UDim.new(0, 6),             -- Corrected to UDim
             Transparency = {
                 Background = 0.15,
                 Accent = 0.1,
