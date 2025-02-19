@@ -114,7 +114,7 @@ function Switch.new(parent, text, default, callback)
     local knobStroke = Styles.createStroke(
         System.Colors.Accent,
         0.8,
-        1
+        0.5
     )
     knobStroke.Parent = knob
     
