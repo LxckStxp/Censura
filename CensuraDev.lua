@@ -71,16 +71,23 @@ function CensuraDev.new(title)
         Name = "TitleBar",
         Size = System.UI.TitleBarSize,
         BackgroundColor3 = System.Colors.Background,
-        BackgroundTransparency = 0.15, -- Slightly more solid than main frame
+        BackgroundTransparency = System.UI.Transparency.TitleBar, -- Almost fully transparent
         Parent = self.MainFrame
     })
     
-    -- Apply animated gradient to TitleBar
-    local titleGradient = Animations.createAnimatedGradient({
-        StartColor = System.Colors.Accent,
-        EndColor = System.Colors.Background,
-        Rotation = 90
+    -- Adjust gradient properties for better visibility
+    titleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, System.Colors.Accent),
+        ColorSequenceKeypoint.new(0.4, System.Colors.Accent), -- Extended color hold
+        ColorSequenceKeypoint.new(1, System.Colors.Background)
     })
+    
+    titleGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.1),  -- More visible at start
+        NumberSequenceKeypoint.new(0.4, 0.2), -- Gradual fade
+        NumberSequenceKeypoint.new(1, 0.8)   -- More transparent at end
+    })
+
     titleGradient.Parent = self.TitleBar
     
     -- Title Text
