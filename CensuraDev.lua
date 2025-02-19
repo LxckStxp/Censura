@@ -35,6 +35,9 @@ local Animations = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Ce
 assert(Styles and Styles.initialize, "Failed to initialize Styles module")
 Styles.initialize()
 
+-- Window Management
+local ActiveWindows = {}
+
 -- Utility Functions
 local function Create(className, properties)
     assert(type(className) == "string", "className must be a string")
@@ -77,29 +80,13 @@ local function CreateTitleBar(parent, system, title)
         Parent = parent
     })
     
-    -- Create and configure gradient
     local titleGradient = Animations.createAnimatedGradient({
         StartColor = system.Colors.Accent,
         EndColor = system.Colors.Background,
         Rotation = 90
     })
-    
-    -- Apply gradient settings
-    titleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, system.Colors.Accent),
-        ColorSequenceKeypoint.new(0.4, system.Colors.Accent),
-        ColorSequenceKeypoint.new(1, system.Colors.Background)
-    })
-    
-    titleGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.1),
-        NumberSequenceKeypoint.new(0.4, 0.2),
-        NumberSequenceKeypoint.new(1, 0.8)
-    })
-    
     titleGradient.Parent = titleBar
     
-    -- Title Text
     local titleText = Create("TextLabel", {
         Text = title,
         Size = UDim2.new(1, -40, 1, 0),
@@ -159,22 +146,18 @@ function CensuraDev.new(title)
     local self = setmetatable({}, CensuraDev)
     local System = getgenv().CensuraSystem
     
-    -- Initialize UI
     self.GUI = Create("ScreenGui", {
         Name = "CensuraUI",
         ResetOnSpawn = false,
         Parent = Services.CoreGui
     })
     
-    -- Create main components
     self.MainFrame, self.MainStroke = CreateMainWindow(self.GUI, System)
     self.TitleBar, self.TitleText = CreateTitleBar(self.MainFrame, System, title or System.Settings.DefaultTitle)
     self.ContentFrame = CreateContentFrame(self.MainFrame, System)
     
-    -- Setup dragging
     Functions.makeDraggable(self.TitleBar, self.MainFrame)
     
-    -- Setup hover effects
     self.TitleBar.MouseEnter:Connect(function()
         Animations.applyHoverState(self.TitleBar, self.MainStroke)
     end)
@@ -183,13 +166,14 @@ function CensuraDev.new(title)
         Animations.removeHoverState(self.TitleBar, self.MainStroke)
     end)
     
-    -- Setup visibility toggle
     self.Visible = true
     self.KeybindConnection = Services.UserInput.InputBegan:Connect(function(input, processed)
         if not processed and input.KeyCode == System.Settings.ToggleKey then
             self:Toggle()
         end
     end)
+    
+    table.insert(ActiveWindows, self)
     
     return self
 end
@@ -213,6 +197,30 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     assert(type(max) == "number", "Maximum value must be a number")
     assert(type(callback) == "function", "Slider callback must be a function")
     return Components.createSlider(self.ContentFrame, text, min, max, default, callback)
+end
+
+-- Window Management Methods
+function CensuraDev.HideAll()
+    for _, window in ipairs(ActiveWindows) do
+        if window.Visible then
+            window:Hide()
+        end
+    end
+end
+
+function CensuraDev.ShowAll()
+    for _, window in ipairs(ActiveWindows) do
+        if not window.Visible then
+            window:Show()
+        end
+    end
+end
+
+function CensuraDev.DestroyAll()
+    for _, window in ipairs(ActiveWindows) do
+        window:Destroy()
+    end
+    table.clear(ActiveWindows)
 end
 
 -- Visibility Methods
@@ -244,6 +252,13 @@ function CensuraDev:Destroy()
     end
     if self.GUI then
         self.GUI:Destroy()
+    end
+    
+    for i, window in ipairs(ActiveWindows) do
+        if window == self then
+            table.remove(ActiveWindows, i)
+            break
+        end
     end
 end
 
