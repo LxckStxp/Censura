@@ -105,6 +105,9 @@ local function CreateTitleBar(parent, system, title)
         CornerRadius = UDim.new(0, 2),
         Parent = titleBar
     })
+
+    local titleStroke = Styles.createStroke(system.Colors.Border, 0.6, 0.5)
+    titleStroke.Parent = titleBar
     
     return titleBar, titleText
 end
