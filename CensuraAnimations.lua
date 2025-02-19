@@ -1,146 +1,238 @@
 --[[
-    CensuraAnimations Module
-    Version: 1.0
+    CensuraDev Functions Module
+    Version: 4.2
     
-    Handles subtle animations and transitions for Censura UI
+    Core utility functions for UI interaction and behavior
+    with improved dragging and window management
 ]]
 
-local Animations = {}
+local Functions = {}
 
+-- Services
 local Services = {
     Tween = game:GetService("TweenService"),
+    Input = game:GetService("UserInputService"),
     Run = game:GetService("RunService")
 }
 
--- Consistent animation timing
-local Timing = {
-    Quick = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-    Normal = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-    Smooth = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-}
+-- Load Animations Module
+local Animations = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraAnimations.lua"))()
 
--- Subtle gradient animation
-function Animations.createAnimatedGradient(properties)
-    properties = properties or {}
+-- Utility Functions
+local function Create(className, properties)
+    local instance = Instance.new(className)
+    for prop, value in pairs(properties) do
+        instance[prop] = value
+    end
+    return instance
+end
+
+-- Enhanced Dragging System
+function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
+    assert(titleBar, "TitleBar is required")
+    assert(mainFrame, "MainFrame is required")
+    
     local System = getgenv().CensuraSystem
+    if not System then return end
     
-    local gradient = Instance.new("UIGradient")
+    dragOptions = dragOptions or {
+        dragThreshold = 1,
+        dragInertia = 0.07,
+        snapToScreen = true,
+        bounds = {
+            minX = 0,
+            minY = 0,
+            maxX = 1,
+            maxY = 1
+        }
+    }
     
-    local startColor = properties.StartColor or System.Colors.Accent
-    local endColor = properties.EndColor or System.Colors.Background
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    local lastMousePos
+    local lastGoalPos
+    local dragInertia = Vector2.new()
     
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, startColor),
-        ColorSequenceKeypoint.new(0.4, startColor),      
-        ColorSequenceKeypoint.new(1, endColor)
-    })
-    
-    -- Adjusted transparency values for better visibility
-    gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),      -- Fully visible start
-        NumberSequenceKeypoint.new(0.4, 0.1),  -- Slight fade during hold
-        NumberSequenceKeypoint.new(1, 0.5)     -- More visible end
-    })
-    
-    gradient.Rotation = properties.Rotation or 90
-    
-    -- Slightly faster animation
-    local offset = 0
-    local connection
-    connection = Services.Run.RenderStepped:Connect(function(deltaTime)
-        if not gradient.Parent then
-            connection:Disconnect()
-            return
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        local goalPos = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        
+        if dragOptions.snapToScreen then
+            local viewportSize = workspace.CurrentCamera.ViewportSize
+            local frameSize = mainFrame.AbsoluteSize
+            
+            goalPos = UDim2.new(
+                goalPos.X.Scale,
+                math.clamp(goalPos.X.Offset, 0, viewportSize.X - frameSize.X),
+                goalPos.Y.Scale,
+                math.clamp(goalPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
+            )
         end
-        offset = (offset + deltaTime * 0.2) % 1  -- Increased speed from 0.1 to 0.2
-        gradient.Offset = Vector2.new(offset, 0)
+        
+        if dragOptions.dragInertia > 0 then
+            lastGoalPos = goalPos
+            if lastMousePos then
+                dragInertia = (input.Position - lastMousePos) * dragOptions.dragInertia
+            end
+            lastMousePos = input.Position
+        else
+            mainFrame.Position = goalPos
+        end
+    end
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            lastMousePos = dragStart
+            
+            -- Now using loaded Animations module
+            Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
+                end
+            end)
+        end
     end)
     
-    return gradient
-end
-
--- Element Hover States
-function Animations.applyHoverState(object, stroke)
-    Services.Tween:Create(stroke, Timing.Quick, {
-        Transparency = 0.6
-    }):Play()
-    Services.Tween:Create(object, Timing.Quick, {
-        BackgroundTransparency = object.BackgroundTransparency - 0.1
-    }):Play()
-end
-
-function Animations.removeHoverState(object, stroke)
-    Services.Tween:Create(stroke, Timing.Quick, {
-        Transparency = 0.8
-    }):Play()
-    Services.Tween:Create(object, Timing.Quick, {
-        BackgroundTransparency = object.BackgroundTransparency + 0.1
-    }):Play()
-end
-
--- Toggle Animation
-function Animations.toggleSwitch(knob, frame, enabled)
-    local targetPos = enabled and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    local targetColor = enabled and getgenv().CensuraSystem.Colors.Enabled 
-                               or getgenv().CensuraSystem.Colors.Background
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
     
-    Services.Tween:Create(knob, Timing.Normal, {
-        Position = targetPos
-    }):Play()
+    Services.Input.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            updateDrag(input)
+        end
+    end)
     
-    Services.Tween:Create(frame, Timing.Normal, {
-        BackgroundColor3 = targetColor
-    }):Play()
+    if dragOptions.dragInertia > 0 then
+        Services.Run.RenderStepped:Connect(function()
+            if not dragging and dragInertia.Magnitude > 0.1 then
+                local newPos = mainFrame.Position + UDim2.new(0, dragInertia.X, 0, dragInertia.Y)
+                dragInertia = dragInertia * 0.9
+                
+                if dragOptions.snapToScreen then
+                    local viewportSize = workspace.CurrentCamera.ViewportSize
+                    local frameSize = mainFrame.AbsoluteSize
+                    
+                    newPos = UDim2.new(
+                        newPos.X.Scale,
+                        math.clamp(newPos.X.Offset, 0, viewportSize.X - frameSize.X),
+                        newPos.Y.Scale,
+                        math.clamp(newPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
+                    )
+                end
+                
+                mainFrame.Position = newPos
+            end
+        end)
+    end
 end
 
--- Slider Interactions
-function Animations.updateSlider(knob, fill, pos, value)
-    Services.Tween:Create(knob, Timing.Quick, {
-        Position = UDim2.new(pos, -6, 0.5, -6)
-    }):Play()
+-- Enhanced Window Setup
+function Functions.setupWindow(frame, options)
+    local System = getgenv().CensuraSystem
+    if not System then return end
     
-    Services.Tween:Create(fill, Timing.Quick, {
-        Size = UDim2.new(pos, 0, 1, 0)
-    }):Play()
+    options = options or {
+        gradient = true,
+        corners = true,
+        stroke = true,
+        shadow = true
+    }
+    
+    local effects = {}
+    
+    if options.gradient then
+        -- Now using loaded Animations module
+        effects.gradient = Animations.createAnimatedGradient({
+            StartColor = System.Colors.Background,
+            EndColor = System.Colors.Accent,
+            Rotation = 45
+        })
+        effects.gradient.Parent = frame
+    end
+    
+    if options.corners then
+        effects.corner = Create("UICorner", {
+            CornerRadius = System.UI.CornerRadius,
+            Parent = frame
+        })
+    end
+    
+    if options.stroke then
+        effects.stroke = System.Styles.createStroke(
+            System.Colors.Border,
+            System.UI.Transparency.Elements,
+            1.5
+        )
+        effects.stroke.Parent = frame
+    end
+    
+    if options.shadow then
+        effects.shadow = Create("ImageLabel", {
+            Name = "Shadow",
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, 20, 1, 20),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://7912134082",
+            ImageColor3 = System.Colors.Background,
+            ImageTransparency = 0.6,
+            Parent = frame
+        })
+        effects.shadow.ZIndex = frame.ZIndex - 1
+    end
+    
+    return effects
 end
 
--- Window Transitions
-function Animations.showWindow(frame)
+-- Enhanced Animation Utilities
+function Functions.fadeIn(frame, duration, callback)
+    local System = getgenv().CensuraSystem
+    if not System then return end
+    
     frame.BackgroundTransparency = 1
-    local show = Services.Tween:Create(frame, Timing.Smooth, {
-        BackgroundTransparency = 0.1
-    })
-    show:Play()
-    return show
-end
-
-function Animations.hideWindow(frame)
-    local hide = Services.Tween:Create(frame, Timing.Smooth, {
-        BackgroundTransparency = 1
-    })
-    hide:Play()
-    return hide
-end
-
--- Button Feedback
-function Animations.buttonPress(button, stroke)
-    Services.Tween:Create(button, Timing.Quick, {
-        BackgroundTransparency = 0.7
-    }):Play()
+    local tween = Services.Tween:Create(
+        frame, 
+        TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = System.UI.Transparency.Background}
+    )
     
-    Services.Tween:Create(stroke, Timing.Quick, {
-        Transparency = 0.4
-    }):Play()
-end
-
-function Animations.buttonRelease(button, stroke)
-    Services.Tween:Create(button, Timing.Quick, {
-        BackgroundTransparency = 0.8
-    }):Play()
+    if callback then
+        tween.Completed:Connect(callback)
+    end
     
-    Services.Tween:Create(stroke, Timing.Quick, {
-        Transparency = 0.6
-    }):Play()
+    tween:Play()
+    return tween
 end
 
-return Animations
+function Functions.fadeOut(frame, duration, callback)
+    local tween = Services.Tween:Create(
+        frame,
+        TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 1}
+    )
+    
+    if callback then
+        tween.Completed:Connect(callback)
+    end
+    
+    tween:Play()
+    return tween
+end
+
+return Functions
