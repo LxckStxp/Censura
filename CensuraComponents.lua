@@ -192,11 +192,12 @@ function Components.createToggle(parent, text, default, callback)
 end
 
 -- Slider Component
+-- Slider Component
 function Components.createSlider(parent, text, min, max, default, callback)
     local System = getgenv().CensuraSystem
     if not System then return end
     
-    -- Modern container with minimal design
+    -- Container
     local container = Create("Frame", {
         Name = "SliderContainer",
         Size = System.UI.SliderSize,
@@ -205,19 +206,16 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = parent
     })
     
+    -- Apply corner and stroke
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 2),
+        CornerRadius = System.UI.CornerRadius,
         Parent = container
     })
     
-    local stroke = Create("UIStroke", {
-        Color = System.Colors.Accent,
-        Transparency = 0.8,
-        Thickness = 1,
-        Parent = container
-    })
+    local containerStroke = Styles.createStroke(System.Colors.Accent, 0.8, 1)
+    containerStroke.Parent = container
     
-    -- Clean, minimal labels
+    -- Label
     local label = Create("TextLabel", {
         Name = "Label",
         Position = UDim2.new(0, 10, 0, 0),
@@ -231,7 +229,7 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = container
     })
     
-    -- Modern value display
+    -- Value Display
     local valueFrame = Create("Frame", {
         Name = "ValueFrame",
         Position = UDim2.new(1, -60, 0, 0),
@@ -242,7 +240,7 @@ function Components.createSlider(parent, text, min, max, default, callback)
     })
     
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 2),
+        CornerRadius = System.UI.CornerRadius,
         Parent = valueFrame
     })
     
@@ -258,11 +256,11 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = valueFrame
     })
     
-    -- Sleek slider track
+    -- Slider Track
     local sliderTrack = Create("Frame", {
         Name = "SliderTrack",
         Position = UDim2.new(0, 10, 0.7, 0),
-        Size = UDim2.new(1, -20, 0, 2), -- Thinner track
+        Size = UDim2.new(1, -20, 0, 2),
         BackgroundColor3 = System.Colors.Border,
         BackgroundTransparency = 0.5,
         Parent = container
@@ -273,7 +271,7 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = sliderTrack
     })
     
-    -- Progress fill with gradient
+    -- Fill Bar with Animated Gradient
     local fill = Create("Frame", {
         Name = "Fill",
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
@@ -286,20 +284,15 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = fill
     })
     
-    -- Apply subtle gradient to fill
-    local fillGradient = Create("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, System.Colors.Enabled),
-            ColorSequenceKeypoint.new(1, System.Colors.Highlight)
-        }),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(1, 0.2)
-        }),
-        Parent = fill
+    -- Animated gradient for fill
+    local fillGradient = Animations.createAnimatedGradient({
+        StartColor = System.Colors.Enabled,
+        EndColor = System.Colors.Highlight,
+        Rotation = 0
     })
+    fillGradient.Parent = fill
     
-    -- Modern minimal knob
+    -- Knob
     local knob = Create("Frame", {
         Name = "Knob",
         Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6),
@@ -314,84 +307,75 @@ function Components.createSlider(parent, text, min, max, default, callback)
         Parent = knob
     })
     
-    -- Knob highlight effect
-    local knobStroke = Create("UIStroke", {
-        Color = System.Colors.Accent,
-        Transparency = 1,
-        Thickness = 1,
-        Parent = knob
-    })
+    local knobStroke = Styles.createStroke(System.Colors.Accent, 1, 1)
+    knobStroke.Parent = knob
     
-    -- Slider functionality with improved visual feedback
+    -- Slider Logic
     local dragging = false
     local value = default
     
-    local function updateVisuals(pos)
+    local function updateValue(pos)
         value = math.floor(min + ((max - min) * pos))
         valueLabel.Text = tostring(value)
         
-        -- Smooth transitions
-        Services.Tween:Create(knob, TweenInfo.new(0.1), {
-            Position = UDim2.new(pos, -6, 0.5, -6)
-        }):Play()
+        Animations.updateSlider(knob, fill, pos, value)
         
-        Services.Tween:Create(fill, TweenInfo.new(0.1), {
-            Size = UDim2.new(pos, 0, 1, 0)
-        }):Play()
+        if typeof(callback) == "function" then
+            callback(value)
+        end
     end
     
+    -- Input Handling
     knob.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            -- Show knob highlight
-            Services.Tween:Create(knobStroke, TweenInfo.new(0.2), {
-                Transparency = 0.5
-            }):Play()
+            Animations.applyHoverState(knob, knobStroke)
         end
     end)
     
     Services.Input.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            -- Hide knob highlight
-            Services.Tween:Create(knobStroke, TweenInfo.new(0.2), {
-                Transparency = 1
-            }):Play()
+            Animations.removeHoverState(knob, knobStroke)
         end
     end)
     
-    -- Smooth drag handling
+    -- Track click handling
+    sliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = input.Position.X
+            local trackPos = sliderTrack.AbsolutePosition.X
+            local trackSize = sliderTrack.AbsoluteSize.X
+            
+            local pos = math.clamp((mousePos - trackPos) / trackSize, 0, 1)
+            updateValue(pos)
+        end
+    end)
+    
+    -- Drag handling
     Services.Run.RenderStepped:Connect(function()
         if dragging then
             local mousePos = Services.Input:GetMouseLocation()
-            local sliderPos = sliderTrack.AbsolutePosition
-            local sliderSize = sliderTrack.AbsoluteSize
+            local trackPos = sliderTrack.AbsolutePosition
+            local trackSize = sliderTrack.AbsoluteSize
             
             local pos = math.clamp(
-                (mousePos.X - sliderPos.X) / sliderSize.X,
+                (mousePos.X - trackPos.X) / trackSize.X,
                 0, 1
             )
             
-            updateVisuals(pos)
-            
-            if typeof(callback) == "function" then
-                callback(value)
-            end
+            updateValue(pos)
         end
     end)
     
-    -- Hover effects
-    sliderTrack.MouseEnter:Connect(function()
-        Services.Tween:Create(stroke, Timing.Normal, {
-            Transparency = 0.5
-        }):Play()
+    -- Container hover effects
+    container.MouseEnter:Connect(function()
+        Animations.applyHoverState(container, containerStroke)
     end)
     
-    sliderTrack.MouseLeave:Connect(function()
+    container.MouseLeave:Connect(function()
         if not dragging then
-            Services.Tween:Create(stroke, Timing.Normal, {
-                Transparency = 0.8
-            }):Play()
+            Animations.removeHoverState(container, containerStroke)
         end
     end)
     
