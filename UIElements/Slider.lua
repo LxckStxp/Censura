@@ -1,9 +1,9 @@
 --[[
     Slider Module
     Part of Censura UI Library
-    Version: 1.0
+    Version: 1.1
     
-    Military-tech inspired slider with precise value control and visual feedback
+    Military-tech inspired slider with precise value control
 ]]
 
 local Slider = {}
@@ -14,6 +14,15 @@ local Services = {
     Input = game:GetService("UserInputService"),
     Run = game:GetService("RunService")
 }
+
+-- Load Styles Module
+local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
+
+-- Constants
+local KNOB_SIZE = UDim2.new(0, 12, 0, 12)
+local KNOB_OFFSET = UDim2.new(0, -6, 0.5, -6)
+local TRACK_HEIGHT = 2
+local VALUE_DISPLAY_WIDTH = 50
 
 -- Utility Function
 local function Create(className, properties)
@@ -34,7 +43,6 @@ function Slider.new(parent, text, min, max, default, callback)
     assert(min < max, "Min must be less than max")
     assert(default >= min and default <= max, "Default must be between min and max")
     
-    -- Get system reference
     local System = getgenv().CensuraSystem
     assert(System, "CensuraSystem not initialized")
     
@@ -53,49 +61,34 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = container
     })
     
-    local containerStroke = System.Styles.createStroke(
+    local containerStroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
     )
     containerStroke.Parent = container
     
-    -- Container Gradient
-    local containerGradient = System.Animations.createAnimatedGradient({
-        StartColor = System.Colors.Accent,
-        EndColor = System.Colors.Background,
-        Rotation = 45
-    })
-    containerGradient.Parent = container
-    
     -- Label and Value Display
-    local labelContainer = Create("Frame", {
-        Name = "LabelContainer",
-        Size = UDim2.new(1, 0, 0, 20),
-        BackgroundTransparency = 1,
-        Parent = container
-    })
-    
     local label = Create("TextLabel", {
         Name = "Label",
         Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -70, 1, 0),
+        Size = UDim2.new(1, -(VALUE_DISPLAY_WIDTH + 20), 0, 20),
         BackgroundTransparency = 1,
         Text = text,
         TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham,
+        Font = Enum.Font.GothamBold,
         TextSize = 14,
-        Parent = labelContainer
+        Parent = container
     })
     
     local valueFrame = Create("Frame", {
         Name = "ValueFrame",
         Position = UDim2.new(1, -60, 0, 0),
-        Size = UDim2.new(0, 50, 1, 0),
+        Size = UDim2.new(0, VALUE_DISPLAY_WIDTH, 0, 20),
         BackgroundColor3 = System.Colors.Background,
         BackgroundTransparency = 0.8,
-        Parent = labelContainer
+        Parent = container
     })
     
     Create("UICorner", {
@@ -116,20 +109,13 @@ function Slider.new(parent, text, min, max, default, callback)
     })
     
     -- Slider Track
-    local trackContainer = Create("Frame", {
-        Name = "TrackContainer",
-        Position = UDim2.new(0, 10, 0.7, 0),
-        Size = UDim2.new(1, -20, 0, 2),
-        BackgroundTransparency = 1,
-        Parent = container
-    })
-    
     local track = Create("Frame", {
         Name = "Track",
-        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 10, 0.7, 0),
+        Size = UDim2.new(1, -20, 0, TRACK_HEIGHT),
         BackgroundColor3 = System.Colors.Border,
         BackgroundTransparency = 0.5,
-        Parent = trackContainer
+        Parent = container
     })
     
     Create("UICorner", {
@@ -150,18 +136,11 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = fill
     })
     
-    local fillGradient = System.Animations.createAnimatedGradient({
-        StartColor = System.Colors.Enabled,
-        EndColor = System.Colors.Highlight,
-        Rotation = 0
-    })
-    fillGradient.Parent = fill
-    
     -- Knob
     local knob = Create("Frame", {
         Name = "Knob",
         Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6),
-        Size = UDim2.new(0, 12, 0, 12),
+        Size = KNOB_SIZE,
         BackgroundColor3 = System.Colors.Text,
         Parent = track
     })
@@ -171,7 +150,7 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = knob
     })
     
-    local knobStroke = System.Styles.createStroke(
+    local knobStroke = Styles.createStroke(
         System.Colors.Accent,
         0.8,
         1
@@ -179,36 +158,45 @@ function Slider.new(parent, text, min, max, default, callback)
     knobStroke.Parent = knob
     
     -- State Management
-    local dragging = false
-    local value = default
-    local isLocked = false
-    local precision = 0
+    local state = {
+        value = default,
+        dragging = false,
+        locked = false,
+        precision = 0,
+        hovered = false
+    }
     
     -- Value Update Logic
     local function updateValue(pos, skipCallback)
-        if isLocked then return end
+        if state.locked then return end
         
         local newValue = min + ((max - min) * pos)
-        if precision > 0 then
-            newValue = math.floor(newValue * (10 ^ precision)) / (10 ^ precision)
+        if state.precision > 0 then
+            newValue = math.floor(newValue * (10 ^ state.precision)) / (10 ^ state.precision)
         else
             newValue = math.floor(newValue)
         end
         
-        if newValue ~= value then
-            value = newValue
-            valueLabel.Text = tostring(value)
-            System.Animations.updateSlider(knob, fill, pos, value)
+        if newValue ~= state.value then
+            state.value = newValue
+            valueLabel.Text = tostring(state.value)
+            
+            -- Update visuals
+            local fillSize = UDim2.new(pos, 0, 1, 0)
+            local knobPos = UDim2.new(pos, KNOB_OFFSET.X.Offset, KNOB_OFFSET.Y.Scale, KNOB_OFFSET.Y.Offset)
+            
+            Services.Tween:Create(fill, TweenInfo.new(0.1), {Size = fillSize}):Play()
+            Services.Tween:Create(knob, TweenInfo.new(0.1), {Position = knobPos}):Play()
             
             if not skipCallback then
-                callback(value)
+                callback(state.value)
             end
         end
     end
     
     -- Input Handling
-    local function handleTrackClick(input)
-        if isLocked then return end
+    local function handleDrag(input)
+        if state.locked then return end
         
         local trackPos = track.AbsolutePosition.X
         local trackSize = track.AbsoluteSize.X
@@ -218,47 +206,53 @@ function Slider.new(parent, text, min, max, default, callback)
         updateValue(pos)
     end
     
+    -- Input Connections
     knob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 and not isLocked then
-            dragging = true
-            System.Animations.applyHoverState(knob, knobStroke)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and not state.locked then
+            state.dragging = true
+            Services.Tween:Create(knob, TweenInfo.new(0.1), {
+                Size = UDim2.new(0, 14, 0, 14)
+            }):Play()
         end
     end)
     
     Services.Input.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-            System.Animations.removeHoverState(knob, knobStroke)
+            state.dragging = false
+            Services.Tween:Create(knob, TweenInfo.new(0.1), {
+                Size = KNOB_SIZE
+            }):Play()
         end
     end)
     
     track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            handleTrackClick(input)
+            handleDrag(input)
         end
     end)
     
     Services.Run.RenderStepped:Connect(function()
-        if dragging then
-            local mousePos = Services.Input:GetMouseLocation().X
-            local trackPos = track.AbsolutePosition.X
-            local trackSize = track.AbsoluteSize.X
-            
-            local pos = math.clamp((mousePos - trackPos) / trackSize, 0, 1)
-            updateValue(pos)
+        if state.dragging then
+            handleDrag({Position = Services.Input:GetMouseLocation()})
         end
     end)
     
     -- Hover Effects
     container.MouseEnter:Connect(function()
-        if not isLocked then
-            System.Animations.applyHoverState(container, containerStroke)
+        if not state.locked then
+            state.hovered = true
+            Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
+                Transparency = 0.2
+            }):Play()
         end
     end)
     
     container.MouseLeave:Connect(function()
-        if not dragging then
-            System.Animations.removeHoverState(container, containerStroke)
+        state.hovered = false
+        if not state.dragging then
+            Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
+                Transparency = System.UI.Transparency.Elements
+            }):Play()
         end
     end)
     
@@ -270,18 +264,18 @@ function Slider.new(parent, text, min, max, default, callback)
         end,
         
         GetValue = function(self)
-            return value
+            return state.value
         end,
         
         SetLocked = function(self, locked)
-            isLocked = locked
+            state.locked = locked
             container.BackgroundTransparency = locked and 0.7 or System.UI.Transparency.Elements
             label.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
         end,
         
         SetPrecision = function(self, decimals)
-            precision = math.clamp(decimals or 0, 0, 10)
-            self:SetValue(value, true)
+            state.precision = math.clamp(decimals or 0, 0, 10)
+            self:SetValue(state.value, true)
         end,
         
         SetText = function(self, newText)
