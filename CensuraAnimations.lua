@@ -26,30 +26,26 @@ function Animations.createAnimatedGradient(properties)
     
     local gradient = Instance.new("UIGradient")
     
-    -- Use explicit colors from the system or properties
+    -- Use explicit colors with optional hold point
     local startColor = properties.StartColor or System.Colors.Accent
     local endColor = properties.EndColor or System.Colors.Background
     
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, startColor),
-        ColorSequenceKeypoint.new(0.5, Color3.new(
-            (startColor.R + endColor.R)/2,
-            (startColor.G + endColor.G)/2,
-            (startColor.B + endColor.B)/2
-        )),
+        ColorSequenceKeypoint.new(0.4, startColor),      -- Hold the start color
         ColorSequenceKeypoint.new(1, endColor)
     })
     
-    -- Subtle transparency
+    -- Less transparent gradient for better visibility
     gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.1),
-        NumberSequenceKeypoint.new(0.5, 0.2),
-        NumberSequenceKeypoint.new(1, 0.1)
+        NumberSequenceKeypoint.new(0, 0.05),    -- More visible start
+        NumberSequenceKeypoint.new(0.4, 0.1),   -- Subtle fade during hold
+        NumberSequenceKeypoint.new(1, 0.3)      -- Gradual end transition
     })
     
     gradient.Rotation = properties.Rotation or 90
     
-    -- Subtle offset animation
+    -- Subtle animation
     local offset = 0
     local connection
     connection = Services.Run.RenderStepped:Connect(function(deltaTime)
