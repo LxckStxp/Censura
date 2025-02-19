@@ -22,16 +22,31 @@ local Timing = {
 -- Subtle gradient animation
 function Animations.createAnimatedGradient(properties)
     properties = properties or {}
+    local System = getgenv().CensuraSystem
     
     local gradient = Instance.new("UIGradient")
+    
+    -- Use explicit colors from the system or properties
+    local startColor = properties.StartColor or System.Colors.Accent
+    local endColor = properties.EndColor or System.Colors.Background
+    
     gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, properties.StartColor or getgenv().CensuraSystem.Colors.Accent),
-        ColorSequenceKeypoint.new(1, properties.EndColor or getgenv().CensuraSystem.Colors.Background)
+        ColorSequenceKeypoint.new(0, startColor),
+        ColorSequenceKeypoint.new(0.5, Color3.new(
+            (startColor.R + endColor.R)/2,
+            (startColor.G + endColor.G)/2,
+            (startColor.B + endColor.B)/2
+        )),
+        ColorSequenceKeypoint.new(1, endColor)
     })
+    
+    -- Subtle transparency
     gradient.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 0.1),
-        NumberSequenceKeypoint.new(1, 0.2)
+        NumberSequenceKeypoint.new(0.5, 0.2),
+        NumberSequenceKeypoint.new(1, 0.1)
     })
+    
     gradient.Rotation = properties.Rotation or 90
     
     -- Subtle offset animation
