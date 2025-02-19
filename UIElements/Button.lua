@@ -59,7 +59,7 @@ function Button.new(parent, text, callback)
         Parent = button
     })
     
-    local stroke = System.Styles.createStroke(
+    local stroke = System.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
