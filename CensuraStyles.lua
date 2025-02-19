@@ -35,7 +35,8 @@ function Styles.initialize()
                 Background = 0.15,
                 Accent = 0.1,
                 Text = 0,
-                Elements = 0.08
+                Elements = 0.08,
+                TitleBar = 0.95
             }
         },
         Settings = {
