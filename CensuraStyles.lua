@@ -1,81 +1,98 @@
 --[[
     CensuraDev Styles Module
-    Version: 4.0
-    
-    Defines the visual styling and UI configuration for Censura
+    Version: 4.1
+
+    Defines the visual styling and UI configuration for Censura.
 ]]
 
 local Styles = {}
 
 function Styles.initialize()
-    -- Check if CensuraSystem already exists
     if getgenv().CensuraSystem then return end
-    
-    -- Initialize the global styling system
+
     getgenv().CensuraSystem = {
         Colors = {
-            Background = Color3.fromRGB(15, 15, 25),
-            Accent = Color3.fromRGB(30, 30, 45),
-            Text = Color3.fromRGB(255, 255, 255),
-            Highlight = Color3.fromRGB(45, 45, 65),
-            Enabled = Color3.fromRGB(126, 131, 255),
+            Background = Color3.fromRGB(25, 25, 35),
+            Accent = Color3.fromRGB(80, 120, 200),
+            Text = Color3.fromRGB(240, 240, 245),
+            Highlight = Color3.fromRGB(100, 140, 220),
+            Enabled = Color3.fromRGB(80, 120, 200),
             Disabled = Color3.fromRGB(255, 85, 85),
-            Border = Color3.fromRGB(60, 60, 80),
-            SecondaryText = Color3.fromRGB(180, 180, 190)
+            Border = Color3.fromRGB(50, 50, 65),
+            SecondaryText = Color3.fromRGB(150, 150, 160)
         },
         UI = {
-            WindowSize = UDim2.new(0, 300, 0, 400),
-            TitleBarSize = UDim2.new(1, 0, 0, 32),
-            ContentPadding = UDim2.new(0, 5, 0, 35),
-            ButtonSize = UDim2.new(1, -12, 0, 32),
-            ToggleSize = UDim2.new(0, 24, 0, 24),
-            SliderSize = UDim2.new(1, -12, 0, 45),
-            CornerRadius = UDim.new(0, 8),
-            Padding = UDim.new(0, 6),
-            ElementSpacing = UDim.new(0, 8),
+            WindowSize = UDim2.new(0, 320, 0, 420),
+            TitleBarSize = UDim2.new(1, 0, 0, 36),
+            ContentPadding = UDim2.new(0, 8, 0, 40),
+            ButtonSize = UDim2.new(1, -16, 0, 36),
+            ToggleSize = UDim2.new(0, 28, 0, 28),
+            SliderSize = UDim2.new(1, -16, 0, 50),
+            CornerRadius = UDim.new(0, 10),
+            Padding = UDim.new(0, 8),
+            ElementSpacing = UDim.new(0, 10),
             Transparency = {
-                Background = 0.2,
-                Accent = 0.1,
+                Background = 0.1,
+                Accent = 0.05,
                 Text = 0,
-                Elements = 0.05
+                Elements = 0.0
             }
         },
         Animation = {
-            TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            TweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             DragSmoothing = 0.05
         },
         Settings = {
             DefaultTitle = "Censura",
             ToggleKey = Enum.KeyCode.RightAlt,
-            Version = "4.0"
+            Version = "4.1"
         }
     }
 end
 
--- Optional: Add theme management functions
 function Styles.setTheme(theme)
     local System = getgenv().CensuraSystem
     if not System then return end
-    
-    -- Example themes
+
     local themes = {
         Dark = {
-            Background = Color3.fromRGB(15, 15, 25),
-            Accent = Color3.fromRGB(30, 30, 45),
-            -- ... other colors
+            Background = Color3.fromRGB(25, 25, 35),
+            Accent = Color3.fromRGB(80, 120, 200),
+            Text = Color3.fromRGB(240, 240, 245),
+            Highlight = Color3.fromRGB(100, 140, 220),
+            Border = Color3.fromRGB(50, 50, 65)
         },
         Light = {
-            Background = Color3.fromRGB(240, 240, 245),
-            Accent = Color3.fromRGB(220, 220, 230),
-            -- ... other colors
+            Background = Color3.fromRGB(245, 245, 250),
+            Accent = Color3.fromRGB(200, 200, 210),
+            Text = Color3.fromRGB(20, 20, 30),
+            Highlight = Color3.fromRGB(180, 180, 190),
+            Border = Color3.fromRGB(210, 210, 220)
         }
     }
-    
+
     if themes[theme] then
-        for color, value in pairs(themes[theme]) do
-            System.Colors[color] = value
+        for key, value in pairs(themes[theme]) do
+            System.Colors[key] = value
         end
     end
+end
+
+function Styles.getDefaultGradient(rotation)
+    rotation = rotation or 45
+    local System = getgenv().CensuraSystem
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, System.Colors.Accent),
+        ColorSequenceKeypoint.new(1, System.Colors.Background)
+    })
+    gradient.Rotation = rotation
+    return gradient
+end
+
+function Styles.applyGradient(uiObject, rotation)
+    local gradient = Styles.getDefaultGradient(rotation)
+    gradient.Parent = uiObject
 end
 
 return Styles
