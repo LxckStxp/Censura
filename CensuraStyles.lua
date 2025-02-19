@@ -13,7 +13,7 @@ function Styles.initialize()
     getgenv().CensuraSystem = {
         Colors = {
             Background = Color3.fromRGB(15, 17, 19),      -- Deep dark gray
-            Accent = Color3.fromRGB(255, 30, 50),         -- Hot rod red
+            Accent = Color3.fromRGB(200, 200, 200),         -- almost white
             Text = Color3.fromRGB(225, 228, 230),         -- Soft white
             Highlight = Color3.fromRGB(255, 65, 85),      -- Lighter red for highlights
             Enabled = Color3.fromRGB(50, 200, 100),       -- Success green
@@ -28,7 +28,7 @@ function Styles.initialize()
             ButtonSize = UDim2.new(1, -12, 0, 32),
             ToggleSize = UDim2.new(0, 24, 0, 24),
             SliderSize = UDim2.new(1, -12, 0, 40),
-            CornerRadius = UDim.new(0, 4),               -- Corrected to UDim
+            CornerRadius = UDim.new(0, 2),               -- Corrected to UDim
             Padding = UDim.new(0, 6),                    -- Corrected to UDim
             ElementSpacing = UDim.new(0, 6),             -- Corrected to UDim
             Transparency = {
