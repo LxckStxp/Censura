@@ -1,8 +1,9 @@
 --[[
     Switch Module
     Part of Censura UI Library
+    Version: 1.0
     
-    Modern toggle switch component with smooth animations and state management
+    Military-tech inspired toggle switch with animated transitions
 ]]
 
 local Switch = {}
@@ -22,12 +23,14 @@ local function Create(className, properties)
 end
 
 function Switch.new(parent, text, default, callback)
+    -- Input validation
     assert(parent, "Parent is required")
     assert(type(text) == "string", "Text must be a string")
     assert(type(callback) == "function", "Callback must be a function")
     
+    -- Get system reference
     local System = getgenv().CensuraSystem
-    if not System then return end
+    assert(System, "CensuraSystem not initialized")
     
     -- Main Container
     local container = Create("Frame", {
@@ -35,6 +38,7 @@ function Switch.new(parent, text, default, callback)
         Size = System.UI.ButtonSize,
         BackgroundColor3 = System.Colors.Background,
         BackgroundTransparency = System.UI.Transparency.Elements,
+        ClipsDescendants = true,
         Parent = parent
     })
     
@@ -45,12 +49,20 @@ function Switch.new(parent, text, default, callback)
     })
     
     -- Container stroke
-    local containerStroke = Styles.createStroke(
+    local containerStroke = System.Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
     )
     containerStroke.Parent = container
+    
+    -- Container gradient
+    local containerGradient = System.Animations.createAnimatedGradient({
+        StartColor = System.Colors.Accent,
+        EndColor = System.Colors.Background,
+        Rotation = 45
+    })
+    containerGradient.Parent = container
     
     -- Text Label
     local label = Create("TextLabel", {
@@ -76,14 +88,13 @@ function Switch.new(parent, text, default, callback)
         Parent = container
     })
     
-    -- Track corner rounding
     Create("UICorner", {
         CornerRadius = UDim.new(1, 0),
         Parent = track
     })
     
     -- Track gradient
-    local trackGradient = Animations.createAnimatedGradient({
+    local trackGradient = System.Animations.createAnimatedGradient({
         StartColor = default and System.Colors.Enabled or System.Colors.Background,
         EndColor = System.Colors.Background,
         Rotation = 90
@@ -99,14 +110,12 @@ function Switch.new(parent, text, default, callback)
         Parent = track
     })
     
-    -- Knob corner rounding
     Create("UICorner", {
         CornerRadius = UDim.new(1, 0),
         Parent = knob
     })
     
-    -- Knob stroke
-    local knobStroke = Styles.createStroke(
+    local knobStroke = System.Styles.createStroke(
         System.Colors.Accent,
         0.8,
         1
@@ -115,50 +124,81 @@ function Switch.new(parent, text, default, callback)
     
     -- State Management
     local enabled = default or false
+    local isLocked = false
     
     -- Switch Logic
-    local function updateSwitch(newState)
+    local function updateSwitch(newState, skipCallback)
+        if isLocked then return end
+        
         enabled = newState
+        System.Animations.toggleSwitch(knob, track, enabled)
         
-        -- Animate switch state
-        Animations.toggleSwitch(knob, track, enabled)
-        
-        -- Update gradient
         trackGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, enabled and System.Colors.Enabled or System.Colors.Background),
             ColorSequenceKeypoint.new(1, System.Colors.Background)
         })
         
-        callback(enabled)
+        if not skipCallback then
+            callback(enabled)
+        end
     end
     
     -- Input Handling
+    local function handleClick()
+        if not isLocked then
+            updateSwitch(not enabled)
+        end
+    end
+    
     track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            updateSwitch(not enabled)
+            handleClick()
         end
     end)
     
-    -- Container Hover Effects
+    container.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            handleClick()
+        end
+    end)
+    
+    -- Hover Effects
     container.MouseEnter:Connect(function()
-        Animations.applyHoverState(container, containerStroke)
+        if not isLocked then
+            System.Animations.applyHoverState(container, containerStroke)
+        end
     end)
     
     container.MouseLeave:Connect(function()
-        Animations.removeHoverState(container, containerStroke)
+        System.Animations.removeHoverState(container, containerStroke)
     end)
     
     -- Public Interface
-    local methods = {
-        SetEnabled = function(self, state)
-            updateSwitch(state)
+    local interface = {
+        SetState = function(self, state, skipCallback)
+            updateSwitch(state, skipCallback)
         end,
+        
         GetState = function(self)
             return enabled
+        end,
+        
+        SetLocked = function(self, locked)
+            isLocked = locked
+            container.BackgroundTransparency = locked and 0.7 or System.UI.Transparency.Elements
+            label.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
+        end,
+        
+        SetText = function(self, newText)
+            label.Text = newText
+        end,
+        
+        Destroy = function(self)
+            container:Destroy()
         end
     }
     
-    return setmetatable(methods, {
+    return setmetatable(interface, {
         __index = container
     })
 end
