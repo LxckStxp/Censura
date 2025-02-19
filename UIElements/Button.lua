@@ -1,8 +1,9 @@
 --[[
     Button Module
     Part of Censura UI Library
+    Version: 1.0
     
-    Military-tech inspired button component with animated feedback
+    Military-tech inspired button component with animated gradient and interaction feedback
 ]]
 
 local Button = {}
@@ -22,12 +23,14 @@ local function Create(className, properties)
 end
 
 function Button.new(parent, text, callback)
+    -- Input validation
     assert(parent, "Parent is required")
     assert(type(text) == "string", "Text must be a string")
     assert(type(callback) == "function", "Callback must be a function")
     
+    -- Get system reference
     local System = getgenv().CensuraSystem
-    if not System then return end
+    assert(System, "CensuraSystem not initialized")
     
     -- Main Button Container
     local button = Create("TextButton", {
@@ -40,50 +43,87 @@ function Button.new(parent, text, callback)
         Font = Enum.Font.Gotham,
         TextSize = 14,
         AutoButtonColor = false,
+        ClipsDescendants = true,  -- For gradient containment
         Parent = parent
     })
     
-    -- Apply corner rounding from system settings
+    -- Apply corner rounding
     Create("UICorner", {
         CornerRadius = System.UI.CornerRadius,
         Parent = button
     })
     
-    -- Create border using Styles module
-    local stroke = Styles.createStroke(
+    -- Create border using system Styles
+    local stroke = System.Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
     )
     stroke.Parent = button
     
-    -- Apply animated gradient using Animations module
-    local gradient = Animations.createAnimatedGradient({
+    -- Apply animated gradient using system Animations
+    local gradient = System.Animations.createAnimatedGradient({
         StartColor = System.Colors.Accent,
         EndColor = System.Colors.Background,
         Rotation = 45
     })
     gradient.Parent = button
     
+    -- State tracking
+    local isPressed = false
+    
     -- Interaction Feedback
     button.MouseEnter:Connect(function()
-        Animations.applyHoverState(button, stroke)
+        System.Animations.applyHoverState(button, stroke)
     end)
     
     button.MouseLeave:Connect(function()
-        Animations.removeHoverState(button, stroke)
+        if not isPressed then
+            System.Animations.removeHoverState(button, stroke)
+        end
     end)
     
     button.MouseButton1Down:Connect(function()
-        Animations.buttonPress(button, stroke)
+        isPressed = true
+        System.Animations.buttonPress(button, stroke)
     end)
     
     button.MouseButton1Up:Connect(function()
-        Animations.buttonRelease(button, stroke)
+        isPressed = false
+        System.Animations.buttonRelease(button, stroke)
+        System.Animations.removeHoverState(button, stroke)
         callback()
     end)
     
-    return button
+    -- Public interface
+    local interface = {
+        Instance = button,
+        
+        SetText = function(self, newText)
+            button.Text = newText
+        end,
+        
+        SetEnabled = function(self, enabled)
+            button.Active = enabled
+            button.AutoButtonColor = false
+            
+            if enabled then
+                stroke.Color = System.Colors.Accent
+                button.TextColor3 = System.Colors.Text
+            else
+                stroke.Color = System.Colors.Disabled
+                button.TextColor3 = System.Colors.SecondaryText
+            end
+        end,
+        
+        Destroy = function(self)
+            button:Destroy()
+        end
+    }
+    
+    return setmetatable(interface, {
+        __index = button
+    })
 end
 
 return Button
