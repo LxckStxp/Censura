@@ -1,9 +1,9 @@
 --[[
     CensuraDev UI Library
-    Version: 4.0
+    Version: 4.1
 
-    Modern, lightweight UI library for Roblox games
-    with optimized performance and customizable styling
+    Modern, minimal UI library for Roblox games
+    with optimized performance and military-tech inspired styling
 ]]
 
 local CensuraDev = {}
@@ -24,7 +24,7 @@ local Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/Lxc
 -- Initialize Styles
 Styles.initialize()
 
--- Utility function to create instances with given properties
+-- Utility function
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -45,32 +45,43 @@ function CensuraDev.new(title)
         Parent = Services.CoreGui
     })
     
-    -- Main Window
+    -- Main Window with modern styling
     self.MainFrame = Create("Frame", {
         Name = "MainFrame",
         Size = System.UI.WindowSize,
         Position = UDim2.new(0.5, -150, 0.5, -200),
         BackgroundColor3 = System.Colors.Background,
-        BackgroundTransparency = System.UI.Transparency.Background,
+        BackgroundTransparency = 0.1,
         Parent = self.GUI
     })
     
-    -- Apply window styling
-    Functions.setupWindow(self.MainFrame)
-    
-    -- Title Bar
-    self.TitleBar = Create("Frame", {
-        Name = "TitleBar",
-        Size = System.UI.TitleBarSize,
-        BackgroundColor3 = System.Colors.Accent,
-        BackgroundTransparency = System.UI.Transparency.Accent,
+    -- Apply minimal corner radius
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, 2),
         Parent = self.MainFrame
     })
     
-    -- Apply gradient to TitleBar for a modern look
+    -- Add subtle stroke to main frame
+    local mainStroke = Create("UIStroke", {
+        Color = System.Colors.Border,
+        Transparency = 0.7,
+        Thickness = 1,
+        Parent = self.MainFrame
+    })
+    
+    -- Title Bar with minimal design
+    self.TitleBar = Create("Frame", {
+        Name = "TitleBar",
+        Size = System.UI.TitleBarSize,
+        BackgroundColor3 = System.Colors.Background,
+        BackgroundTransparency = 0.1,
+        Parent = self.MainFrame
+    })
+    
+    -- Apply gradient and stroke to TitleBar
     Styles.applyGradient(self.TitleBar, 90)
     
-    -- Title Text
+    -- Modern minimal title text
     self.TitleText = Create("TextLabel", {
         Text = title or System.Settings.DefaultTitle,
         Size = UDim2.new(1, -40, 1, 0),
@@ -78,31 +89,32 @@ function CensuraDev.new(title)
         BackgroundTransparency = 1,
         TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
         Parent = self.TitleBar
     })
     
-    -- Apply UICorner to TitleBar for rounded corners
+    -- Minimal corner radius for TitleBar
     Create("UICorner", {
-        CornerRadius = System.UI.CornerRadius,
+        CornerRadius = UDim.new(0, 2),
         Parent = self.TitleBar
     })
     
-    -- Content Container
+    -- Content Container with clean styling
     self.ContentFrame = Create("ScrollingFrame", {
         Name = "ContentFrame",
         Position = System.UI.ContentPadding,
         Size = UDim2.new(1, -10, 1, -50),
         BackgroundTransparency = 1,
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 1, -- Thinner scrollbar
         ScrollBarImageColor3 = System.Colors.Accent,
+        ScrollBarImageTransparency = 0.5,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         Parent = self.MainFrame
     })
     
-    -- Content Layout
+    -- Clean content layout
     Create("UIListLayout", {
         Parent = self.ContentFrame,
         Padding = System.UI.ElementSpacing,
@@ -110,18 +122,32 @@ function CensuraDev.new(title)
         HorizontalAlignment = Enum.HorizontalAlignment.Center
     })
     
+    -- Adjusted padding for cleaner spacing
     Create("UIPadding", {
         Parent = self.ContentFrame,
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8),
-        PaddingTop = UDim.new(0, 8),
-        PaddingBottom = UDim.new(0, 8)
+        PaddingLeft = UDim.new(0, 6),
+        PaddingRight = UDim.new(0, 6),
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 6)
     })
     
-    -- Setup dragging for the MainFrame via TitleBar
+    -- Setup dragging with smooth animation
     Functions.makeDraggable(self.TitleBar, self.MainFrame)
     
-    -- Toggle Visibility Keybind
+    -- Add hover effect to TitleBar
+    self.TitleBar.MouseEnter:Connect(function()
+        Services.Tween:Create(mainStroke, System.Animation.TweenInfo, {
+            Transparency = 0.5
+        }):Play()
+    end)
+    
+    self.TitleBar.MouseLeave:Connect(function()
+        Services.Tween:Create(mainStroke, System.Animation.TweenInfo, {
+            Transparency = 0.7
+        }):Play()
+    end)
+    
+    -- Toggle Visibility with fade animation
     self.Visible = true
     self.KeybindConnection = Services.UserInput.InputBegan:Connect(function(input, processed)
         if not processed and input.KeyCode == System.Settings.ToggleKey then
@@ -132,8 +158,7 @@ function CensuraDev.new(title)
     return self
 end
 
--- UI Element Creation Methods
-
+-- UI Element Creation Methods (unchanged for compatibility)
 function CensuraDev:CreateButton(text, callback)
     assert(type(text) == "string", "Button text must be a string")
     assert(type(callback) == "function", "Button callback must be a function")
@@ -154,17 +179,31 @@ function CensuraDev:CreateSlider(text, min, max, default, callback)
     return Components.createSlider(self.ContentFrame, text, min, max, default, callback)
 end
 
--- Visibility Methods
-
+-- Enhanced visibility methods with smooth transitions
 function CensuraDev:Show()
     self.Visible = true
     self.GUI.Enabled = true
-    Functions.fadeIn(self.MainFrame)
+    
+    -- Fade in with slight scale animation
+    self.MainFrame.Size = self.MainFrame.Size - UDim2.new(0, 10, 0, 10)
+    self.MainFrame.BackgroundTransparency = 1
+    
+    Services.Tween:Create(self.MainFrame, TweenInfo.new(0.2), {
+        Size = System.UI.WindowSize,
+        BackgroundTransparency = 0.1
+    }):Play()
 end
 
 function CensuraDev:Hide()
-    Functions.fadeOut(self.MainFrame)
-    task.wait(0.2)
+    -- Fade out with slight scale animation
+    local hideTween = Services.Tween:Create(self.MainFrame, TweenInfo.new(0.2), {
+        Size = self.MainFrame.Size - UDim2.new(0, 10, 0, 10),
+        BackgroundTransparency = 1
+    })
+    
+    hideTween:Play()
+    hideTween.Completed:Wait()
+    
     self.Visible = false
     self.GUI.Enabled = false
 end
@@ -178,7 +217,6 @@ function CensuraDev:Toggle()
 end
 
 -- Cleanup Method
-
 function CensuraDev:Destroy()
     if self.KeybindConnection then
         self.KeybindConnection:Disconnect()
