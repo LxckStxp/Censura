@@ -1,9 +1,9 @@
 --[[
     Switch Module
     Part of Censura UI Library
-    Version: 1.0
+    Version: 1.1
     
-    Military-tech inspired toggle switch with animated transitions
+    Military-tech inspired toggle switch with enhanced animations
 ]]
 
 local Switch = {}
@@ -11,6 +11,12 @@ local Switch = {}
 -- Services
 local Services = {
     Tween = game:GetService("TweenService")
+}
+
+-- Constants
+local KNOB_POSITIONS = {
+    OFF = UDim2.new(0, 2, 0.5, -6),
+    ON = UDim2.new(1, -14, 0.5, -6)
 }
 
 -- Utility Function
@@ -23,12 +29,10 @@ local function Create(className, properties)
 end
 
 function Switch.new(parent, text, default, callback)
-    -- Input validation
     assert(parent, "Parent is required")
     assert(type(text) == "string", "Text must be a string")
     assert(type(callback) == "function", "Callback must be a function")
     
-    -- Get system reference
     local System = getgenv().CensuraSystem
     assert(System, "CensuraSystem not initialized")
     
@@ -42,13 +46,11 @@ function Switch.new(parent, text, default, callback)
         Parent = parent
     })
     
-    -- Apply corner rounding
     Create("UICorner", {
         CornerRadius = System.UI.CornerRadius,
         Parent = container
     })
     
-    -- Container stroke
     local containerStroke = System.Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
@@ -56,15 +58,30 @@ function Switch.new(parent, text, default, callback)
     )
     containerStroke.Parent = container
     
-    -- Container gradient
+    -- Enhanced container gradient
     local containerGradient = System.Animations.createAnimatedGradient({
         StartColor = System.Colors.Accent,
         EndColor = System.Colors.Background,
-        Rotation = 45
+        Rotation = 45,
+        Speed = 0.5
     })
     containerGradient.Parent = container
     
-    -- Text Label
+    -- Text Label with shadow
+    local labelShadow = Create("TextLabel", {
+        Name = "LabelShadow",
+        Position = UDim2.new(0, 11, 0, 1),
+        Size = UDim2.new(1, -44, 1, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = System.Colors.Background,
+        TextTransparency = 0.8,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        Parent = container
+    })
+    
     local label = Create("TextLabel", {
         Name = "Label",
         Position = UDim2.new(0, 10, 0, 0),
@@ -73,12 +90,12 @@ function Switch.new(parent, text, default, callback)
         Text = text,
         TextColor3 = System.Colors.Text,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham,
+        Font = Enum.Font.GothamBold,
         TextSize = 14,
         Parent = container
     })
     
-    -- Switch Track
+    -- Enhanced Track
     local track = Create("Frame", {
         Name = "Track",
         Position = UDim2.new(1, -34, 0.5, -8),
@@ -93,18 +110,19 @@ function Switch.new(parent, text, default, callback)
         Parent = track
     })
     
-    -- Track gradient
+    -- Animated track gradient
     local trackGradient = System.Animations.createAnimatedGradient({
         StartColor = default and System.Colors.Enabled or System.Colors.Background,
         EndColor = System.Colors.Background,
-        Rotation = 90
+        Rotation = 90,
+        Speed = 1
     })
     trackGradient.Parent = track
     
-    -- Switch Knob
+    -- Enhanced Knob
     local knob = Create("Frame", {
         Name = "Knob",
-        Position = default and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6),
+        Position = default and KNOB_POSITIONS.ON or KNOB_POSITIONS.OFF,
         Size = UDim2.new(0, 12, 0, 12),
         BackgroundColor3 = System.Colors.Text,
         Parent = track
@@ -122,34 +140,69 @@ function Switch.new(parent, text, default, callback)
     )
     knobStroke.Parent = knob
     
+    -- Knob highlight
+    local knobHighlight = Create("Frame", {
+        Name = "Highlight",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = System.Colors.Highlight,
+        BackgroundTransparency = 1,
+        Parent = knob
+    })
+    
+    Create("UICorner", {
+        CornerRadius = UDim.new(1, 0),
+        Parent = knobHighlight
+    })
+    
     -- State Management
     local enabled = default or false
     local isLocked = false
+    local isHovered = false
     
-    -- Switch Logic
+    -- Enhanced Switch Logic
     local function updateSwitch(newState, skipCallback)
         if isLocked then return end
         
         enabled = newState
+        
+        -- Animate knob position
         System.Animations.toggleSwitch(knob, track, enabled)
         
+        -- Update track gradient
         trackGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, enabled and System.Colors.Enabled or System.Colors.Background),
             ColorSequenceKeypoint.new(1, System.Colors.Background)
         })
+        
+        -- Animate knob highlight
+        Services.Tween:Create(knobHighlight, TweenInfo.new(0.2), {
+            BackgroundTransparency = enabled and 0.7 or 1
+        }):Play()
         
         if not skipCallback then
             callback(enabled)
         end
     end
     
-    -- Input Handling
+    -- Enhanced Input Handling
     local function handleClick()
-        if not isLocked then
-            updateSwitch(not enabled)
-        end
+        if isLocked then return end
+        
+        -- Click feedback animation
+        Services.Tween:Create(knob, TweenInfo.new(0.1), {
+            Size = UDim2.new(0, 10, 0, 10)
+        }):Play()
+        
+        task.delay(0.1, function()
+            Services.Tween:Create(knob, TweenInfo.new(0.1), {
+                Size = UDim2.new(0, 12, 0, 12)
+            }):Play()
+        end)
+        
+        updateSwitch(not enabled)
     end
     
+    -- Input Connections
     track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             handleClick()
@@ -162,18 +215,30 @@ function Switch.new(parent, text, default, callback)
         end
     end)
     
-    -- Hover Effects
+    -- Enhanced Hover Effects
     container.MouseEnter:Connect(function()
         if not isLocked then
+            isHovered = true
             System.Animations.applyHoverState(container, containerStroke)
+            
+            -- Track hover effect
+            Services.Tween:Create(track, TweenInfo.new(0.2), {
+                BackgroundTransparency = 0.3
+            }):Play()
         end
     end)
     
     container.MouseLeave:Connect(function()
+        isHovered = false
         System.Animations.removeHoverState(container, containerStroke)
+        
+        -- Reset track transparency
+        Services.Tween:Create(track, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.5
+        }):Play()
     end)
     
-    -- Public Interface
+    -- Enhanced Public Interface
     local interface = {
         SetState = function(self, state, skipCallback)
             updateSwitch(state, skipCallback)
@@ -187,10 +252,12 @@ function Switch.new(parent, text, default, callback)
             isLocked = locked
             container.BackgroundTransparency = locked and 0.7 or System.UI.Transparency.Elements
             label.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
+            track.BackgroundTransparency = locked and 0.7 or (isHovered and 0.3 or 0.5)
         end,
         
         SetText = function(self, newText)
             label.Text = newText
+            labelShadow.Text = newText
         end,
         
         Destroy = function(self)
