@@ -1,7 +1,7 @@
 --[[
     Slider Module
     Part of Censura UI Library
-    Version: 1.1
+    Version: 1.2
     
     Military-tech inspired slider with precise value control
 ]]
@@ -15,14 +15,27 @@ local Services = {
     Run = game:GetService("RunService")
 }
 
--- Load Styles Module
-local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
-
 -- Constants
-local KNOB_SIZE = UDim2.new(0, 12, 0, 12)
-local KNOB_OFFSET = UDim2.new(0, -6, 0.5, -6)
-local TRACK_HEIGHT = 2
-local VALUE_DISPLAY_WIDTH = 50
+local KNOB_SIZE = {
+    DEFAULT = UDim2.new(0, 12, 0, 12),
+    HOVER = UDim2.new(0, 14, 0, 14)
+}
+
+local TRACK = {
+    HEIGHT = 2,
+    PADDING = 10
+}
+
+local VALUE_DISPLAY = {
+    WIDTH = 50,
+    HEIGHT = 20
+}
+
+local ANIMATION_INFO = {
+    HOVER = TweenInfo.new(0.2),
+    DRAG = TweenInfo.new(0.1),
+    UPDATE = TweenInfo.new(0.1)
+}
 
 -- Utility Function
 local function Create(className, properties)
@@ -61,7 +74,7 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = container
     })
     
-    local containerStroke = Styles.createStroke(
+    local containerStroke = System.Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
@@ -71,8 +84,8 @@ function Slider.new(parent, text, min, max, default, callback)
     -- Label and Value Display
     local label = Create("TextLabel", {
         Name = "Label",
-        Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -(VALUE_DISPLAY_WIDTH + 20), 0, 20),
+        Position = UDim2.new(0, TRACK.PADDING, 0, 0),
+        Size = UDim2.new(1, -(VALUE_DISPLAY.WIDTH + 20), 0, VALUE_DISPLAY.HEIGHT),
         BackgroundTransparency = 1,
         Text = text,
         TextColor3 = System.Colors.Text,
@@ -84,8 +97,8 @@ function Slider.new(parent, text, min, max, default, callback)
     
     local valueFrame = Create("Frame", {
         Name = "ValueFrame",
-        Position = UDim2.new(1, -60, 0, 0),
-        Size = UDim2.new(0, VALUE_DISPLAY_WIDTH, 0, 20),
+        Position = UDim2.new(1, -VALUE_DISPLAY.WIDTH - TRACK.PADDING, 0, 0),
+        Size = UDim2.new(0, VALUE_DISPLAY.WIDTH, 0, VALUE_DISPLAY.HEIGHT),
         BackgroundColor3 = System.Colors.Background,
         BackgroundTransparency = 0.8,
         Parent = container
@@ -108,11 +121,11 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = valueFrame
     })
     
-    -- Slider Track
+    -- Track System
     local track = Create("Frame", {
         Name = "Track",
-        Position = UDim2.new(0, 10, 0.7, 0),
-        Size = UDim2.new(1, -20, 0, TRACK_HEIGHT),
+        Position = UDim2.new(0, TRACK.PADDING, 0.7, 0),
+        Size = UDim2.new(1, -TRACK.PADDING * 2, 0, TRACK.HEIGHT),
         BackgroundColor3 = System.Colors.Border,
         BackgroundTransparency = 0.5,
         Parent = container
@@ -123,7 +136,6 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = track
     })
     
-    -- Fill Bar
     local fill = Create("Frame", {
         Name = "Fill",
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
@@ -136,11 +148,10 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = fill
     })
     
-    -- Knob
     local knob = Create("Frame", {
         Name = "Knob",
         Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6),
-        Size = KNOB_SIZE,
+        Size = KNOB_SIZE.DEFAULT,
         BackgroundColor3 = System.Colors.Text,
         Parent = track
     })
@@ -150,7 +161,7 @@ function Slider.new(parent, text, min, max, default, callback)
         Parent = knob
     })
     
-    local knobStroke = Styles.createStroke(
+    local knobStroke = System.Styles.createStroke(
         System.Colors.Accent,
         0.8,
         1
@@ -166,7 +177,17 @@ function Slider.new(parent, text, min, max, default, callback)
         hovered = false
     }
     
-    -- Value Update Logic
+    -- Update Functions
+    local function updateVisuals(pos)
+        Services.Tween:Create(fill, ANIMATION_INFO.UPDATE, {
+            Size = UDim2.new(pos, 0, 1, 0)
+        }):Play()
+        
+        Services.Tween:Create(knob, ANIMATION_INFO.UPDATE, {
+            Position = UDim2.new(pos, -6, 0.5, -6)
+        }):Play()
+    end
+    
     local function updateValue(pos, skipCallback)
         if state.locked then return end
         
@@ -180,13 +201,7 @@ function Slider.new(parent, text, min, max, default, callback)
         if newValue ~= state.value then
             state.value = newValue
             valueLabel.Text = tostring(state.value)
-            
-            -- Update visuals
-            local fillSize = UDim2.new(pos, 0, 1, 0)
-            local knobPos = UDim2.new(pos, KNOB_OFFSET.X.Offset, KNOB_OFFSET.Y.Scale, KNOB_OFFSET.Y.Offset)
-            
-            Services.Tween:Create(fill, TweenInfo.new(0.1), {Size = fillSize}):Play()
-            Services.Tween:Create(knob, TweenInfo.new(0.1), {Position = knobPos}):Play()
+            updateVisuals(pos)
             
             if not skipCallback then
                 callback(state.value)
@@ -210,8 +225,8 @@ function Slider.new(parent, text, min, max, default, callback)
     knob.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and not state.locked then
             state.dragging = true
-            Services.Tween:Create(knob, TweenInfo.new(0.1), {
-                Size = UDim2.new(0, 14, 0, 14)
+            Services.Tween:Create(knob, ANIMATION_INFO.DRAG, {
+                Size = KNOB_SIZE.HOVER
             }):Play()
         end
     end)
@@ -219,8 +234,8 @@ function Slider.new(parent, text, min, max, default, callback)
     Services.Input.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             state.dragging = false
-            Services.Tween:Create(knob, TweenInfo.new(0.1), {
-                Size = KNOB_SIZE
+            Services.Tween:Create(knob, ANIMATION_INFO.DRAG, {
+                Size = KNOB_SIZE.DEFAULT
             }):Play()
         end
     end)
@@ -241,8 +256,12 @@ function Slider.new(parent, text, min, max, default, callback)
     container.MouseEnter:Connect(function()
         if not state.locked then
             state.hovered = true
-            Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
+            Services.Tween:Create(containerStroke, ANIMATION_INFO.HOVER, {
                 Transparency = 0.2
+            }):Play()
+            
+            Services.Tween:Create(valueFrame, ANIMATION_INFO.HOVER, {
+                BackgroundTransparency = 0.6
             }):Play()
         end
     end)
@@ -250,8 +269,12 @@ function Slider.new(parent, text, min, max, default, callback)
     container.MouseLeave:Connect(function()
         state.hovered = false
         if not state.dragging then
-            Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
+            Services.Tween:Create(containerStroke, ANIMATION_INFO.HOVER, {
                 Transparency = System.UI.Transparency.Elements
+            }):Play()
+            
+            Services.Tween:Create(valueFrame, ANIMATION_INFO.HOVER, {
+                BackgroundTransparency = 0.8
             }):Play()
         end
     end)
@@ -271,6 +294,9 @@ function Slider.new(parent, text, min, max, default, callback)
             state.locked = locked
             container.BackgroundTransparency = locked and 0.7 or System.UI.Transparency.Elements
             label.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
+            valueLabel.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
+            track.BackgroundTransparency = locked and 0.7 or 0.5
+            fill.BackgroundTransparency = locked and 0.7 or 0
         end,
         
         SetPrecision = function(self, decimals)
