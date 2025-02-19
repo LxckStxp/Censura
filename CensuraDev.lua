@@ -27,13 +27,15 @@ local function LoadDependency(url)
 end
 
 local Styles = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua")
-local Components = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua")
-local Functions = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua")
-local Animations = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraAnimations.lua")
+
 
 -- Initialize Styles
 assert(Styles and Styles.initialize, "Failed to initialize Styles module")
 Styles.initialize()
+
+local Components = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraComponents.lua")
+local Functions = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraFunctions.lua")
+local Animations = LoadDependency("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraAnimations.lua")
 
 -- Window Management
 local ActiveWindows = {}
