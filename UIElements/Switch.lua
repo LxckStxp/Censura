@@ -60,7 +60,7 @@ function Switch.new(parent, text, default, callback)
         Parent = container
     })
     
-    local containerStroke = System.Styles.createStroke(
+    local containerStroke = System.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
@@ -110,7 +110,7 @@ function Switch.new(parent, text, default, callback)
         Parent = knob
     })
     
-    local knobStroke = System.Styles.createStroke(
+    local knobStroke = System.createStroke(
         System.Colors.Accent,
         0.8,
         1
