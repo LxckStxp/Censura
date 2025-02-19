@@ -1,8 +1,8 @@
 --[[
     Button Module
-    Version: 1.0
+    Part of Censura UI Library
     
-    Modern, minimal button component with hover and click animations
+    Military-tech inspired button component with animated feedback
 ]]
 
 local Button = {}
@@ -12,11 +12,7 @@ local Services = {
     Tween = game:GetService("TweenService")
 }
 
--- Load Dependencies
-local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
-local Animations = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraAnimations.lua"))()
-
--- Utility Functions
+-- Utility Function
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -25,7 +21,6 @@ local function Create(className, properties)
     return instance
 end
 
--- Button Constructor
 function Button.new(parent, text, callback)
     assert(parent, "Parent is required")
     assert(type(text) == "string", "Text must be a string")
@@ -34,12 +29,12 @@ function Button.new(parent, text, callback)
     local System = getgenv().CensuraSystem
     if not System then return end
     
-    -- Create main button instance
+    -- Main Button Container
     local button = Create("TextButton", {
         Name = "Button",
         Size = System.UI.ButtonSize,
         BackgroundColor3 = System.Colors.Background,
-        BackgroundTransparency = 0.9,
+        BackgroundTransparency = System.UI.Transparency.Elements,
         Text = text,
         TextColor3 = System.Colors.Text,
         Font = Enum.Font.Gotham,
@@ -48,17 +43,21 @@ function Button.new(parent, text, callback)
         Parent = parent
     })
     
-    -- Apply corner rounding
+    -- Apply corner rounding from system settings
     Create("UICorner", {
         CornerRadius = System.UI.CornerRadius,
         Parent = button
     })
     
-    -- Create stroke effect
-    local stroke = Styles.createStroke(System.Colors.Accent, 0.8, 1)
+    -- Create border using Styles module
+    local stroke = Styles.createStroke(
+        System.Colors.Accent,
+        System.UI.Transparency.Elements,
+        1
+    )
     stroke.Parent = button
     
-    -- Optional: Add gradient effect
+    -- Apply animated gradient using Animations module
     local gradient = Animations.createAnimatedGradient({
         StartColor = System.Colors.Accent,
         EndColor = System.Colors.Background,
@@ -66,7 +65,7 @@ function Button.new(parent, text, callback)
     })
     gradient.Parent = button
     
-    -- Hover Effects
+    -- Interaction Feedback
     button.MouseEnter:Connect(function()
         Animations.applyHoverState(button, stroke)
     end)
@@ -75,7 +74,6 @@ function Button.new(parent, text, callback)
         Animations.removeHoverState(button, stroke)
     end)
     
-    -- Click Effects
     button.MouseButton1Down:Connect(function()
         Animations.buttonPress(button, stroke)
     end)
@@ -85,31 +83,7 @@ function Button.new(parent, text, callback)
         callback()
     end)
     
-    -- Public Methods
-    local methods = {}
-    
-    function methods:SetText(newText)
-        button.Text = newText
-    end
-    
-    function methods:SetEnabled(enabled)
-        button.Active = enabled
-        button.AutoButtonColor = enabled
-        
-        if enabled then
-            stroke.Color = System.Colors.Accent
-        else
-            stroke.Color = System.Colors.Disabled
-        end
-    end
-    
-    function methods:Destroy()
-        button:Destroy()
-    end
-    
-    return setmetatable(methods, {
-        __index = button
-    })
+    return button
 end
 
 return Button
