@@ -39,6 +39,10 @@ function Styles.initialize()
                 TitleBar = 0.8
             }
         },
+        Animation = {  -- Add this section
+            TweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            DragSmoothing = 0.05
+        },
         Settings = {
             DefaultTitle = "Censura",
             ToggleKey = Enum.KeyCode.RightAlt,
