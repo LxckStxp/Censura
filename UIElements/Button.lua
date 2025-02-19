@@ -2,8 +2,6 @@
     Button Module
     Part of Censura UI Library
     Version: 1.1
-    
-    Military-tech inspired button component with interaction feedback
 ]]
 
 local Button = {}
@@ -12,6 +10,9 @@ local Button = {}
 local Services = {
     Tween = game:GetService("TweenService")
 }
+
+-- Load Styles Module
+local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
 
 -- Constants
 local PRESS_SCALE = 0.95
@@ -59,7 +60,7 @@ function Button.new(parent, text, callback)
         Parent = button
     })
     
-    local stroke = System.createStroke(
+    local stroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
