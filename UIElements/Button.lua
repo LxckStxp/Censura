@@ -63,7 +63,7 @@ function Button.new(parent, text, callback)
     local stroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
-        1
+        0.5
     )
     stroke.Parent = button
     
