@@ -13,12 +13,12 @@ function Styles.initialize()
     getgenv().CensuraSystem = {
         Colors = {
             Background = Color3.fromRGB(15, 17, 19),      -- Deep dark gray
-            Accent = Color3.fromRGB(200, 200, 200),         -- almost white
+            Accent = Color3.fromRGB(200, 200, 200),         -- Almost white
             Text = Color3.fromRGB(225, 228, 230),         -- Soft white
             Highlight = Color3.fromRGB(255, 65, 85),      -- Lighter red for highlights
             Enabled = Color3.fromRGB(50, 200, 100),       -- Success green
             Disabled = Color3.fromRGB(180, 70, 70),       -- Muted red
-            Border = Color3.fromRGB(40, 45, 50),          -- Dark border
+            Border = Color3.fromRGB(200, 200, 200),          -- Light border
             SecondaryText = Color3.fromRGB(130, 135, 140) -- Muted text
         },
         UI = {
