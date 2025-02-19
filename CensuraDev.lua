@@ -67,7 +67,7 @@ local function CreateMainWindow(parent, system)
         Parent = mainFrame
     })
     
-    local mainStroke = Styles.createStroke(system.Colors.Border, 0.6, 1)
+    local mainStroke = Styles.createStroke(system.Colors.Border, 0.6, 0.5)
     mainStroke.Parent = mainFrame
     
     return mainFrame, mainStroke
