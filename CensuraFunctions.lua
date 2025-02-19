@@ -1,6 +1,6 @@
 --[[
     CensuraDev Functions Module
-    Version: 4.1
+    Version: 4.2
     
     Core utility functions for UI interaction and behavior
     with improved dragging and window management
@@ -14,6 +14,9 @@ local Services = {
     Input = game:GetService("UserInputService"),
     Run = game:GetService("RunService")
 }
+
+-- Load Animations Module
+local Animations = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraAnimations.lua"))()
 
 -- Utility Functions
 local function Create(className, properties)
@@ -61,7 +64,6 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
             startPos.Y.Offset + delta.Y
         )
         
-        -- Apply bounds if snapToScreen is enabled
         if dragOptions.snapToScreen then
             local viewportSize = workspace.CurrentCamera.ViewportSize
             local frameSize = mainFrame.AbsoluteSize
@@ -74,7 +76,6 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
             )
         end
         
-        -- Apply smooth dragging
         if dragOptions.dragInertia > 0 then
             lastGoalPos = goalPos
             if lastMousePos then
@@ -86,7 +87,6 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
         end
     end
     
-    -- Drag start
     titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -94,40 +94,36 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
             startPos = mainFrame.Position
             lastMousePos = dragStart
             
-            -- Highlight effect on drag
-            System.Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
+            -- Now using loaded Animations module
+            Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    System.Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
+                    Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke"))
                 end
             end)
         end
     end)
     
-    -- Track drag input
     titleBar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
     
-    -- Update drag position
     Services.Input.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             updateDrag(input)
         end
     end)
     
-    -- Apply inertia
     if dragOptions.dragInertia > 0 then
         Services.Run.RenderStepped:Connect(function()
             if not dragging and dragInertia.Magnitude > 0.1 then
                 local newPos = mainFrame.Position + UDim2.new(0, dragInertia.X, 0, dragInertia.Y)
                 dragInertia = dragInertia * 0.9
                 
-                -- Apply bounds
                 if dragOptions.snapToScreen then
                     local viewportSize = workspace.CurrentCamera.ViewportSize
                     local frameSize = mainFrame.AbsoluteSize
@@ -158,12 +154,11 @@ function Functions.setupWindow(frame, options)
         shadow = true
     }
     
-    -- Container for effects
     local effects = {}
     
-    -- Gradient background
     if options.gradient then
-        effects.gradient = System.Animations.createAnimatedGradient({
+        -- Now using loaded Animations module
+        effects.gradient = Animations.createAnimatedGradient({
             StartColor = System.Colors.Background,
             EndColor = System.Colors.Accent,
             Rotation = 45
@@ -171,7 +166,6 @@ function Functions.setupWindow(frame, options)
         effects.gradient.Parent = frame
     end
     
-    -- Corner rounding
     if options.corners then
         effects.corner = Create("UICorner", {
             CornerRadius = System.UI.CornerRadius,
@@ -179,7 +173,6 @@ function Functions.setupWindow(frame, options)
         })
     end
     
-    -- Border stroke
     if options.stroke then
         effects.stroke = System.Styles.createStroke(
             System.Colors.Border,
@@ -189,7 +182,6 @@ function Functions.setupWindow(frame, options)
         effects.stroke.Parent = frame
     end
     
-    -- Drop shadow
     if options.shadow then
         effects.shadow = Create("ImageLabel", {
             Name = "Shadow",
