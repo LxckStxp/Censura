@@ -2,6 +2,8 @@
     Switch Module
     Part of Censura UI Library
     Version: 1.2
+    
+    Military-tech inspired toggle switch with smooth transitions
 ]]
 
 local Switch = {}
@@ -10,9 +12,6 @@ local Switch = {}
 local Services = {
     Tween = game:GetService("TweenService")
 }
-
--- Load Styles Module
-local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
 
 -- Constants
 local KNOB_POSITIONS = {
@@ -24,6 +23,9 @@ local KNOB_SIZE = {
     DEFAULT = UDim2.new(0, 12, 0, 12),
     PRESSED = UDim2.new(0, 10, 0, 10)
 }
+
+local TRACK_SIZE = UDim2.new(0, 24, 0, 16)
+local TRACK_POSITION = UDim2.new(1, -34, 0.5, -8)
 
 -- Utility Function
 local function Create(className, properties)
@@ -58,8 +60,7 @@ function Switch.new(parent, text, default, callback)
         Parent = container
     })
     
-    -- Container stroke
-    local containerStroke = Styles.createStroke(
+    local containerStroke = System.Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
@@ -83,8 +84,8 @@ function Switch.new(parent, text, default, callback)
     -- Track
     local track = Create("Frame", {
         Name = "Track",
-        Position = UDim2.new(1, -34, 0.5, -8),
-        Size = UDim2.new(0, 24, 0, 16),
+        Position = TRACK_POSITION,
+        Size = TRACK_SIZE,
         BackgroundColor3 = default and System.Colors.Enabled or System.Colors.Background,
         BackgroundTransparency = 0.5,
         Parent = container
@@ -109,7 +110,7 @@ function Switch.new(parent, text, default, callback)
         Parent = knob
     })
     
-    local knobStroke = Styles.createStroke(
+    local knobStroke = System.Styles.createStroke(
         System.Colors.Accent,
         0.8,
         1
@@ -117,34 +118,37 @@ function Switch.new(parent, text, default, callback)
     knobStroke.Parent = knob
     
     -- State Management
-    local enabled = default or false
-    local isLocked = false
-    local isHovered = false
+    local state = {
+        enabled = default or false,
+        locked = false,
+        hovering = false
+    }
     
     -- Switch Logic
     local function updateSwitch(newState, skipCallback)
-        if isLocked then return end
+        if state.locked then return end
         
-        enabled = newState
+        state.enabled = newState
         
-        -- Animate knob position
+        -- Animate knob
         Services.Tween:Create(knob, TweenInfo.new(0.2), {
-            Position = enabled and KNOB_POSITIONS.ON or KNOB_POSITIONS.OFF
+            Position = state.enabled and KNOB_POSITIONS.ON or KNOB_POSITIONS.OFF,
+            Size = KNOB_SIZE.DEFAULT
         }):Play()
         
-        -- Update track color
+        -- Animate track
         Services.Tween:Create(track, TweenInfo.new(0.2), {
-            BackgroundColor3 = enabled and System.Colors.Enabled or System.Colors.Background
+            BackgroundColor3 = state.enabled and System.Colors.Enabled or System.Colors.Background
         }):Play()
         
         if not skipCallback then
-            callback(enabled)
+            callback(state.enabled)
         end
     end
     
     -- Input Handling
     local function handleClick()
-        if isLocked then return end
+        if state.locked then return end
         
         -- Click feedback
         Services.Tween:Create(knob, TweenInfo.new(0.1), {
@@ -152,15 +156,11 @@ function Switch.new(parent, text, default, callback)
         }):Play()
         
         task.delay(0.1, function()
-            Services.Tween:Create(knob, TweenInfo.new(0.1), {
-                Size = KNOB_SIZE.DEFAULT
-            }):Play()
+            updateSwitch(not state.enabled)
         end)
-        
-        updateSwitch(not enabled)
     end
     
-    -- Input Connections
+    -- Connect Input Events
     local function connectInput(instance)
         instance.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -174,8 +174,8 @@ function Switch.new(parent, text, default, callback)
     
     -- Hover Effects
     container.MouseEnter:Connect(function()
-        if not isLocked then
-            isHovered = true
+        if not state.locked then
+            state.hovering = true
             Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
                 Transparency = 0.2
             }):Play()
@@ -187,7 +187,7 @@ function Switch.new(parent, text, default, callback)
     end)
     
     container.MouseLeave:Connect(function()
-        isHovered = false
+        state.hovering = false
         Services.Tween:Create(containerStroke, TweenInfo.new(0.2), {
             Transparency = System.UI.Transparency.Elements
         }):Play()
@@ -199,19 +199,19 @@ function Switch.new(parent, text, default, callback)
     
     -- Public Interface
     local interface = {
-        SetState = function(self, state, skipCallback)
-            updateSwitch(state, skipCallback)
+        SetState = function(self, newState, skipCallback)
+            updateSwitch(newState, skipCallback)
         end,
         
         GetState = function(self)
-            return enabled
+            return state.enabled
         end,
         
         SetLocked = function(self, locked)
-            isLocked = locked
+            state.locked = locked
             container.BackgroundTransparency = locked and 0.7 or System.UI.Transparency.Elements
             label.TextColor3 = locked and System.Colors.SecondaryText or System.Colors.Text
-            track.BackgroundTransparency = locked and 0.7 or (isHovered and 0.3 or 0.5)
+            track.BackgroundTransparency = locked and 0.7 or (state.hovering and 0.3 or 0.5)
         end,
         
         SetText = function(self, newText)
