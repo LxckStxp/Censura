@@ -2,8 +2,6 @@
     Switch Module
     Part of Censura UI Library
     Version: 1.2
-    
-    Military-tech inspired toggle switch with smooth transitions
 ]]
 
 local Switch = {}
@@ -12,6 +10,9 @@ local Switch = {}
 local Services = {
     Tween = game:GetService("TweenService")
 }
+
+-- Load Styles Module
+local Styles = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraStyles.lua"))()
 
 -- Constants
 local KNOB_POSITIONS = {
@@ -60,7 +61,7 @@ function Switch.new(parent, text, default, callback)
         Parent = container
     })
     
-    local containerStroke = System.createStroke(
+    local containerStroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
         1
@@ -110,7 +111,7 @@ function Switch.new(parent, text, default, callback)
         Parent = knob
     })
     
-    local knobStroke = System.createStroke(
+    local knobStroke = Styles.createStroke(
         System.Colors.Accent,
         0.8,
         1
