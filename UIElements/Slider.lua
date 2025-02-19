@@ -78,7 +78,7 @@ function Slider.new(parent, text, min, max, default, callback)
     local containerStroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
-        1
+        0.5
     )
     containerStroke.Parent = container
     
