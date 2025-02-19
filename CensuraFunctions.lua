@@ -28,6 +28,7 @@ local function Create(className, properties)
 end
 
 -- Enhanced Dragging System
+-- Enhanced Dragging System
 function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     assert(titleBar, "TitleBar is required")
     assert(mainFrame, "MainFrame is required")
@@ -114,7 +115,7 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     end)
     
     Services.Input.InputEnded:Connect(function(input, processed)
-        if not processed and input.UserInputType == Enum.UserInput1 and dragging then
+        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
             dragging = false
             Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
         end
@@ -141,6 +142,7 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
         end)
     end
 end
+
 
 -- Enhanced Window Setup (unchanged from original code)
 function Functions.setupWindow(frame, options)
