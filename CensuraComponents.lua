@@ -14,6 +14,12 @@ local Services = {
     Run = game:GetService("RunService")
 }
 
+local Timing = {
+    Quick = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+    Normal = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+    Smooth = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+}
+
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
@@ -56,19 +62,19 @@ function Components.createButton(parent, text, callback)
     
     -- Hover Effects
     button.MouseEnter:Connect(function()
-        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+        Services.Tween:Create(stroke, Timing.Normal, {
             Transparency = 0.2
         }):Play()
-        Services.Tween:Create(button, System.Animation.TweenInfo, {
+        Services.Tween:Create(button, Timing.Normal, {
             BackgroundTransparency = 0.7
         }):Play()
     end)
     
     button.MouseLeave:Connect(function()
-        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+        Services.Tween:Create(stroke, Timing.Normal, {
             Transparency = 0.8
         }):Play()
-        Services.Tween:Create(button, System.Animation.TweenInfo, {
+        Services.Tween:Create(button, Timing.Normal, {
             BackgroundTransparency = 0.9
         }):Play()
     end)
@@ -376,14 +382,14 @@ function Components.createSlider(parent, text, min, max, default, callback)
     
     -- Hover effects
     sliderTrack.MouseEnter:Connect(function()
-        Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+        Services.Tween:Create(stroke, Timing.Normal, {
             Transparency = 0.5
         }):Play()
     end)
     
     sliderTrack.MouseLeave:Connect(function()
         if not dragging then
-            Services.Tween:Create(stroke, System.Animation.TweenInfo, {
+            Services.Tween:Create(stroke, Timing.Normal, {
                 Transparency = 0.8
             }):Play()
         end
