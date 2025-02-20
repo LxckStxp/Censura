@@ -73,28 +73,12 @@ function Functions.setupWindow(frame, options)
     if not System then return end
     
     options = options or {
-        gradient = true,
         corners = true,
         stroke = true,
         shadow = true
     }
     
     local effects = {}
-
-    if options.gradient then
-        effects.gradient = Animations.createAnimatedGradient and Animations.createAnimatedGradient {
-            StartColor = System.Colors.Background,
-            EndColor = System.Colors.Accent,
-            Rotation = 45
-        } or Create("UIGradient", {
-            Color = ColorSequence.new {
-                ColorSequenceKeypoint.new(0, System.Colors.Background), 
-                ColorSequenceKeypoint.new(1, System.Colors.Accent) 
-            },
-            Rotation = 45,
-            Parent = frame
-        }) 
-    end
 
     if options.corners then
         effects.corner = Create("UICorner", {
