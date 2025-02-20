@@ -64,7 +64,7 @@ function Switch.new(parent, text, default, callback)
     local containerStroke = Styles.createStroke(
         System.Colors.Accent,
         System.UI.Transparency.Elements,
-        1
+        0.5
     )
     containerStroke.Parent = container
     
