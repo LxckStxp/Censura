@@ -28,7 +28,6 @@ local function Create(className, properties)
 end
 
 -- Enhanced Dragging System
--- Enhanced Dragging System
 function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     assert(titleBar, "TitleBar is required")
     assert(mainFrame, "MainFrame is required")
@@ -37,110 +36,76 @@ function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
     if not System then return end
     
     dragOptions = dragOptions or {
-        dragThreshold = 1,
         dragInertia = 0.07,
-        snapToScreen = false,
-        bounds = {
-            minX = 0,
-            minY = 0,
-            maxX = 1,
-            maxY = 1
-        }
+        snapToScreen = true
     }
     
-    local dragging = false
-    local dragStart
-    local startPos
-    local lastMousePos
-    local lastGoalPos
-    local dragInertia = Vector2.new()
+    local state = {
+        dragging = false,
+        dragStart = nil,
+        startPos = nil
+    }
     
-    local function isMouseOver(element, mousePos)
-        local absPos = element.AbsolutePosition
-        local absSize = element.AbsoluteSize
-        return mousePos.X >= absPos.X and mousePos.X <= absPos.X + absSize.X and
-               mousePos.Y >= absPos.Y and mousePos.Y <= absPos.Y + absSize.Y
-    end
-
-    local function updateDrag(inputPos)
-        local delta = inputPos - dragStart
-        local goalPos = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-        
-        if dragOptions.snapToScreen then
-            local viewportSize = workspace.CurrentCamera.ViewportSize
-            local frameSize = mainFrame.AbsoluteSize
+    -- Mouse down
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            state.dragging = true
+            state.dragStart = input.Position
+            state.startPos = mainFrame.Position
             
-            goalPos = UDim2.new(
-                goalPos.X.Scale,
-                math.clamp(goalPos.X.Offset, 0, viewportSize.X - frameSize.X),
-                goalPos.Y.Scale,
-                math.clamp(goalPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
-            )
-        end
-        
-        if dragOptions.dragInertia > 0 then
-            lastGoalPos = goalPos
-            if lastMousePos then
-                dragInertia = (inputPos - lastMousePos) * dragOptions.dragInertia
-            end
-            lastMousePos = inputPos
-        else
-            mainFrame.Position = goalPos
-        end
-    end
-    
-    -- Use global input events for better dragging behavior
-    Services.Input.InputBegan:Connect(function(input, processed)
-        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local mousePos = Services.Input:GetMouseLocation()
-            if isMouseOver(titleBar, mousePos) then
-                dragging = true
-                dragStart = mousePos
-                startPos = mainFrame.Position
-                lastMousePos = dragStart
-                Animations.applyHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
+            -- Apply hover effect
+            if titleBar:FindFirstChild("UIStroke") then
+                Services.Tween:Create(titleBar:FindFirstChild("UIStroke"), 
+                    TweenInfo.new(0.2), 
+                    {Transparency = 0.2}
+                ):Play()
             end
         end
     end)
     
+    -- Mouse move
     Services.Input.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-            updateDrag(input.Position)
-        end
-    end)
-    
-    Services.Input.InputEnded:Connect(function(input, processed)
-        if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
-            dragging = false
-            Animations.removeHoverState(titleBar, titleBar:FindFirstChild("UIStroke") or titleBar:FindFirstChildOfClass("UIStroke") or Create("UIStroke", {Parent = titleBar}))
-        end
-    end)
-    
-    if dragOptions.dragInertia > 0 then
-        Services.Run.RenderStepped:Connect(function(deltaTime)
-            if not dragging and dragInertia.Magnitude > 0.1 then
-                local newPos = mainFrame.Position + UDim2.new(0, dragInertia.X, 0, dragInertia.Y)
-                dragInertia = dragInertia * 0.9
-                if dragOptions.snapToScreen then
-                    local viewportSize = workspace.CurrentCamera.ViewportSize
-                    local frameSize = mainFrame.AbsoluteSize
-                    
-                    newPos = UDim2.new(
-                        newPos.X.Scale,
-                        math.clamp(newPos.X.Offset, 0, viewportSize.X - frameSize.X),
-                        newPos.Y.Scale,
-                        math.clamp(newPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
-                    )
-                end
-                mainFrame.Position = newPos
+        if input.UserInputType == Enum.UserInputType.MouseMovement and state.dragging then
+            local delta = input.Position - state.dragStart
+            local targetPos = UDim2.new(
+                state.startPos.X.Scale,
+                state.startPos.X.Offset + delta.X,
+                state.startPos.Y.Scale,
+                state.startPos.Y.Offset + delta.Y
+            )
+            
+            -- Apply bounds if snapToScreen is enabled
+            if dragOptions.snapToScreen then
+                local viewportSize = workspace.CurrentCamera.ViewportSize
+                local frameSize = mainFrame.AbsoluteSize
+                
+                targetPos = UDim2.new(
+                    targetPos.X.Scale,
+                    math.clamp(targetPos.X.Offset, 0, viewportSize.X - frameSize.X),
+                    targetPos.Y.Scale,
+                    math.clamp(targetPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
+                )
             end
-        end)
-    end
+            
+            -- Apply position with smoothing
+            mainFrame.Position = targetPos
+        end
+    end)
+    
+    -- Mouse up
+    Services.Input.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            state.dragging = false
+            
+            -- Remove hover effect
+            if titleBar:FindFirstChild("UIStroke") then
+                Services.Tween:Create(titleBar:FindFirstChild("UIStroke"), 
+                    TweenInfo.new(0.2), 
+                    {Transparency = System.UI.Transparency.Elements}
+                ):Play()
+            end
+        end
+    end)
 end
 
 
