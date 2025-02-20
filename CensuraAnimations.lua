@@ -19,46 +19,6 @@ local Timing = {
     Smooth = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 }
 
--- Subtle gradient animation
-function Animations.createAnimatedGradient(properties)
-    properties = properties or {}
-    local System = getgenv().CensuraSystem
-    
-    local gradient = Instance.new("UIGradient")
-    
-    local startColor = properties.StartColor or System.Colors.Accent
-    local endColor = properties.EndColor or System.Colors.Background
-    
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, startColor),
-        ColorSequenceKeypoint.new(0.4, startColor),      
-        ColorSequenceKeypoint.new(1, endColor)
-    })
-    
-    -- Adjusted transparency values for better visibility
-    gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),      -- Fully visible start
-        NumberSequenceKeypoint.new(0.4, 0.1),  -- Slight fade during hold
-        NumberSequenceKeypoint.new(1, 0.5)     -- More visible end
-    })
-    
-    gradient.Rotation = properties.Rotation or 90
-    
-    -- Slightly faster animation
-    local offset = 0
-    local connection
-    connection = Services.Run.RenderStepped:Connect(function(deltaTime)
-        if not gradient.Parent then
-            connection:Disconnect()
-            return
-        end
-        offset = (offset + deltaTime * 0.2) % 1  -- Increased speed from 0.1 to 0.2
-        gradient.Offset = Vector2.new(offset, 0)
-    end)
-    
-    return gradient
-end
-
 -- Element Hover States
 function Animations.applyHoverState(object, stroke)
     Services.Tween:Create(stroke, Timing.Quick, {
