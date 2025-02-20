@@ -82,13 +82,6 @@ local function CreateTitleBar(parent, system, title)
         Parent = parent
     })
     
-    local titleGradient = Animations.createAnimatedGradient({
-        StartColor = system.Colors.Accent,
-        EndColor = system.Colors.Background,
-        Rotation = 90
-    })
-    titleGradient.Parent = titleBar
-    
     local titleText = Create("TextLabel", {
         Text = title,
         Size = UDim2.new(1, -40, 1, 0),
