@@ -28,86 +28,44 @@ local function Create(className, properties)
 end
 
 -- Enhanced Dragging System
-function Functions.makeDraggable(titleBar, mainFrame, dragOptions)
+function Functions.makeDraggable(titleBar, mainFrame)
     assert(titleBar, "TitleBar is required")
     assert(mainFrame, "MainFrame is required")
     
-    local System = getgenv().CensuraSystem
-    if not System then return end
-    
-    dragOptions = dragOptions or {
-        dragInertia = 0.07,
-        snapToScreen = true
-    }
-    
-    local state = {
-        dragging = false,
-        dragStart = nil,
-        startPos = nil
-    }
-    
-    -- Mouse down
+    local UserInputService = game:GetService("UserInputService")
+    local dragToggle = nil
+    local dragSpeed = 0.1
+    local dragStart = nil
+    local startPos = nil
+
+    local function updateInput(input)
+        local delta = input.Position - dragStart
+        local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        game:GetService('TweenService'):Create(mainFrame, TweenInfo.new(dragSpeed), {Position = position}):Play()
+    end
+
     titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            state.dragging = true
-            state.dragStart = input.Position
-            state.startPos = mainFrame.Position
-            
-            -- Apply hover effect
-            if titleBar:FindFirstChild("UIStroke") then
-                Services.Tween:Create(titleBar:FindFirstChild("UIStroke"), 
-                    TweenInfo.new(0.2), 
-                    {Transparency = 0.2}
-                ):Play()
-            end
+        if (input.UserInputType == Enum.UserInputType.MouseButton1) then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                end
+            end)
         end
     end)
-    
-    -- Mouse move
-    Services.Input.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and state.dragging then
-            local delta = input.Position - state.dragStart
-            local targetPos = UDim2.new(
-                state.startPos.X.Scale,
-                state.startPos.X.Offset + delta.X,
-                state.startPos.Y.Scale,
-                state.startPos.Y.Offset + delta.Y
-            )
-            
-            -- Apply bounds if snapToScreen is enabled
-            if dragOptions.snapToScreen then
-                local viewportSize = workspace.CurrentCamera.ViewportSize
-                local frameSize = mainFrame.AbsoluteSize
-                
-                targetPos = UDim2.new(
-                    targetPos.X.Scale,
-                    math.clamp(targetPos.X.Offset, 0, viewportSize.X - frameSize.X),
-                    targetPos.Y.Scale,
-                    math.clamp(targetPos.Y.Offset, 0, viewportSize.Y - frameSize.Y)
-                )
-            end
-            
-            -- Apply position with smoothing
-            mainFrame.Position = targetPos
-        end
-    end)
-    
-    -- Mouse up
-    Services.Input.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            state.dragging = false
-            
-            -- Remove hover effect
-            if titleBar:FindFirstChild("UIStroke") then
-                Services.Tween:Create(titleBar:FindFirstChild("UIStroke"), 
-                    TweenInfo.new(0.2), 
-                    {Transparency = System.UI.Transparency.Elements}
-                ):Play()
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dragToggle then
+                updateInput(input)
             end
         end
     end)
 end
-
 
 -- Enhanced Window Setup (unchanged from original code)
 function Functions.setupWindow(frame, options)
