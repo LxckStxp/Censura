@@ -10,31 +10,31 @@ Add the library to your script:
 local CensuraDev = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura/main/CensuraDev.lua"))()
 ```
 
-###2. Create a Menu
+### 2. Create a Menu
 Initialize a new UI window with a title:
 ```lua
 local UI = CensuraDev.new("Your Menu Title")
 ```
-###3. Add Elements
+### 3. Add Elements
 Button: Create an interactive button:
 ```lua
 local button = UI:CreateButton("Click Me", function()
     print("Button clicked!")
 end)
 ```
-###Toggle: Add an on/off switch:
+### Toggle: Add an on/off switch:
 ```lua
 UI:CreateToggle("Toggle Me", false, function(state)
     print("Toggled to: " .. tostring(state))
 end)
 ```
-###Slider: Add a value slider:
+### Slider: Add a value slider:
 ```lua
 UI:CreateSlider("Value", 0, 100, 50, function(value)
     print("Slider value: " .. value)
 end)
 ```
-###4. Customize Elements
+### 4. Customize Elements
 Disable a button (make it non-clickable):
 ```lua
 button:SetEnabled(false)
